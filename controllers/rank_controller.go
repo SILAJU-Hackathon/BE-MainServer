@@ -32,17 +32,13 @@ func NewRankController(rankService services.RankService) RankController {
 // @Failure 401 {object} map[string]string
 // @Router /api/user/rank [get]
 func (c *rankController) GetUserRank(ctx *gin.Context) {
-	userIDStr, exists := ctx.Get("user_id")
+	userIDVal, exists := ctx.Get("user_id")
 	if !exists {
 		utils.SendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	userID, err := uuid.Parse(userIDStr.(string))
-	if err != nil {
-		utils.SendErrorResponse(ctx, http.StatusUnauthorized, "Invalid user ID")
-		return
-	}
+	userID := userIDVal.(uuid.UUID)
 
 	response, err := c.rankService.GetUserRank(userID)
 	if err != nil {
