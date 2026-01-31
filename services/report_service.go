@@ -36,6 +36,8 @@ type ReportService interface {
 	VerifyReport(reportID string) error
 	GetReportDetail(workerID uuid.UUID, reportID string) (*dto.ReportDetailResponse, error)
 	GetReportImage(workerID uuid.UUID, reportID string) (*dto.ReportImageResponse, error)
+	GetAllReportsAdmin(status string, page, limit int) (*dto.PaginatedReportsResponse, error)
+	GetFullReportDetail(reportID string) (*dto.FullReportDetailResponse, error)
 }
 
 type reportService struct {
@@ -318,5 +320,47 @@ func (s *reportService) GetReportImage(workerID uuid.UUID, reportID string) (*dt
 
 	return &dto.ReportImageResponse{
 		BeforeImageURL: report.BeforeImageURL,
+	}, nil
+}
+
+func (s *reportService) GetAllReportsAdmin(status string, page, limit int) (*dto.PaginatedReportsResponse, error) {
+	offset := (page - 1) * limit
+	reports, total, err := s.reportRepo.GetAllReports(status, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildPaginatedResponse(reports, total, page, limit), nil
+}
+
+func (s *reportService) GetFullReportDetail(reportID string) (*dto.FullReportDetailResponse, error) {
+	report, err := s.reportRepo.GetReportByID(reportID)
+	if err != nil {
+		return nil, http_error.REPORT_NOT_FOUND
+	}
+
+	var workerIDStr *string
+	if report.WorkerID != nil {
+		str := report.WorkerID.String()
+		workerIDStr = &str
+	}
+
+	return &dto.FullReportDetailResponse{
+		ID:             report.ID,
+		UserID:         report.UserID.String(),
+		WorkerID:       workerIDStr,
+		Longitude:      report.Longitude,
+		Latitude:       report.Latitude,
+		RoadName:       report.RoadName,
+		BeforeImageURL: report.BeforeImageURL,
+		AfterImageURL:  report.AfterImageURL,
+		Description:    report.Description,
+		DestructClass:  report.DestructClass,
+		LocationScore:  report.LocationScore,
+		TotalScore:     report.TotalScore,
+		Status:         report.Status,
+		AdminNotes:     report.AdminNotes,
+		Deadline:       report.Deadline,
+		CreatedAt:      report.CreatedAt,
 	}, nil
 }

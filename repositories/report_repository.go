@@ -20,6 +20,7 @@ type ReportRepository interface {
 	GetAssignedReportsByWorkerID(workerID uuid.UUID, limit, offset int) ([]entity.Report, int64, error)
 	GetWorkerHistory(workerID uuid.UUID, status string, limit, offset int) ([]entity.Report, int64, error)
 	UpdateStatus(reportID string, status string) error
+	GetAllReports(status string, limit, offset int) ([]entity.Report, int64, error)
 }
 
 type reportRepository struct {
@@ -97,4 +98,18 @@ func (r *reportRepository) GetWorkerHistory(workerID uuid.UUID, status string, l
 
 func (r *reportRepository) UpdateStatus(reportID string, status string) error {
 	return r.db.Model(&entity.Report{}).Where("id = ?", reportID).Update("status", status).Error
+}
+
+func (r *reportRepository) GetAllReports(status string, limit, offset int) ([]entity.Report, int64, error) {
+	var reports []entity.Report
+	var total int64
+
+	query := r.db.Model(&entity.Report{})
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	query.Count(&total)
+	err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&reports).Error
+	return reports, total, err
 }

@@ -25,6 +25,8 @@ type ReportController interface {
 	VerifyReport(ctx *gin.Context)
 	GetReportDetail(ctx *gin.Context)
 	GetReportImage(ctx *gin.Context)
+	GetAllReportsAdmin(ctx *gin.Context)
+	GetFullReportDetail(ctx *gin.Context)
 }
 
 type reportController struct {
@@ -388,4 +390,60 @@ func (c *reportController) GetReportImage(ctx *gin.Context) {
 	}
 
 	utils.SendSuccessResponse(ctx, "Report image retrieved", response)
+}
+
+// @Summary Get All Reports (Admin)
+// @Description Get all reports with optional status filter and pagination
+// @Tags Admin
+// @Produce json
+// @Param status query string false "Filter by status (pending, assigned, finish by worker, verified, complete)"
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Security BearerAuth
+// @Success 200 {object} dto.PaginatedReportsResponse
+// @Failure 401 {object} map[string]string
+// @Router /api/admin/report [get]
+func (c *reportController) GetAllReportsAdmin(ctx *gin.Context) {
+	status := ctx.Query("status")
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	response, err := c.reportService.GetAllReportsAdmin(status, page, limit)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Reports retrieved", response)
+}
+
+// @Summary Get Full Report Detail (Admin)
+// @Description Get complete report details by report ID
+// @Tags Admin
+// @Produce json
+// @Param report_id query string true "Report ID"
+// @Security BearerAuth
+// @Success 200 {object} dto.FullReportDetailResponse
+// @Failure 400 {object} map[string]string
+// @Router /api/admin/report/detail [get]
+func (c *reportController) GetFullReportDetail(ctx *gin.Context) {
+	reportID := ctx.Query("report_id")
+	if reportID == "" {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, "report_id is required")
+		return
+	}
+
+	response, err := c.reportService.GetFullReportDetail(reportID)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Report detail retrieved", response)
 }

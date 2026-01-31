@@ -4,6 +4,7 @@ import (
 	_ "dinacom-11.0-backend/docs"
 	"dinacom-11.0-backend/provider"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -11,6 +12,15 @@ import (
 
 func RunRouter(appProvider provider.AppProvider) {
 	router, controller, config := appProvider.ProvideRouter(), appProvider.ProvideControllers(), appProvider.ProvideConfig()
+
+	// CORS middleware
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	authRouter := NewAuthRouter(controller.ProvideAuthController())

@@ -31,6 +31,8 @@ func (r *reportRouter) Setup(router *gin.RouterGroup) {
 	adminGroup := router.Group("/admin/report")
 	adminGroup.Use(middleware.AuthMiddleware())
 	adminGroup.Use(middleware.RoleMiddleware(entity.ROLE_ADMIN))
+	adminGroup.GET("", r.reportController.GetAllReportsAdmin)
+	adminGroup.GET("/detail", r.reportController.GetFullReportDetail)
 	adminGroup.PATCH("/assign", r.reportController.AssignWorker)
 	adminGroup.GET("/assign", r.reportController.GetAssignedReports)
 	adminGroup.PATCH("/verify", r.reportController.VerifyReport)
