@@ -29,6 +29,8 @@ func (r *authRouter) Setup(router *gin.RouterGroup) {
 	userGroup.POST("/verify-otp", r.authController.VerifyOTP)
 	userGroup.POST("/login", r.authController.LoginUser)
 
+	authGroup.POST("/google", r.authController.GoogleAuth)
+
 	adminGroup := authGroup.Group("/admin")
 	adminGroup.POST("/login", r.authController.LoginAdmin)
 

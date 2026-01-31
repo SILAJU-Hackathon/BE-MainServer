@@ -18,6 +18,7 @@ type AuthService interface {
 	LoginUser(req dto.LoginRequest) (string, error)
 	LoginAdmin(req dto.LoginRequest) (string, error)
 	LoginWorker(req dto.LoginRequest) (string, error)
+	GoogleAuth(req dto.GoogleAuthRequest) (*dto.GoogleAuthResponse, error)
 	GetProfile(userID uuid.UUID) (*dto.UserResponse, error)
 	GetAllUsers() ([]dto.UserResponse, error)
 	GetAllWorkers() ([]dto.UserResponse, error)
@@ -220,4 +221,44 @@ func (s *authService) GetAllWorkers() ([]dto.UserResponse, error) {
 		})
 	}
 	return response, nil
+}
+
+func (s *authService) GoogleAuth(req dto.GoogleAuthRequest) (*dto.GoogleAuthResponse, error) {
+	tokenInfo, err := utils.VerifyGoogleToken(req.IDToken)
+	if err != nil {
+		return nil, errors.New("invalid Google token")
+	}
+
+	existingUser, _ := s.userRepo.FindUserByEmail(tokenInfo.Email)
+	isNewUser := false
+
+	if existingUser == nil {
+		isNewUser = true
+		newUser := &entity.User{
+			Username: tokenInfo.Email,
+			Fullname: tokenInfo.Name,
+			Email:    tokenInfo.Email,
+			Role:     "user",
+			Password: "",
+			Verified: true,
+		}
+		if err := s.userRepo.CreateUser(newUser); err != nil {
+			return nil, err
+		}
+		existingUser, _ = s.userRepo.FindUserByEmail(tokenInfo.Email)
+	}
+
+	token, err := utils.GenerateAccessToken(existingUser.ID, existingUser.Role, existingUser.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.GoogleAuthResponse{
+		Token: token,
+		User: dto.GoogleUserDetails{
+			Email:     existingUser.Email,
+			Fullname:  existingUser.Fullname,
+			IsNewUser: isNewUser,
+		},
+	}, nil
 }

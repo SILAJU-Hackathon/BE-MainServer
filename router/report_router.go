@@ -20,7 +20,7 @@ func NewReportRouter(reportController controllers.ReportController) ReportRouter
 }
 
 func (r *reportRouter) Setup(router *gin.RouterGroup) {
-	reportGroup := router.Group("/report")
+	reportGroup := router.Group("/user/report")
 	reportGroup.Use(middleware.AuthMiddleware())
 	reportGroup.POST("", r.reportController.CreateReport)
 }

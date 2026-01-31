@@ -34,7 +34,7 @@ func NewReportController(reportService services.ReportService) ReportController 
 // @Security BearerAuth
 // @Success 200 {object} dto.ReportResponse
 // @Failure 400 {object} map[string]string
-// @Router /api/report [post]
+// @Router /api/user/report [post]
 func (c *reportController) CreateReport(ctx *gin.Context) {
 	userIDVal, exists := ctx.Get("user_id")
 	if !exists {

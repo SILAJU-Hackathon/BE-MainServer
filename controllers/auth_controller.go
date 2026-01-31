@@ -17,6 +17,7 @@ type AuthController interface {
 	LoginUser(ctx *gin.Context)
 	LoginAdmin(ctx *gin.Context)
 	LoginWorker(ctx *gin.Context)
+	GoogleAuth(ctx *gin.Context)
 	GetProfile(ctx *gin.Context)
 	GetAllUsers(ctx *gin.Context)
 	GetAllWorkers(ctx *gin.Context)
@@ -213,4 +214,29 @@ func (c *authController) GetAllWorkers(ctx *gin.Context) {
 	}
 
 	utils.SendSuccessResponse(ctx, "Workers retrieved", workers)
+}
+
+// @Summary Google Authentication
+// @Description Authenticate with Google ID token and get JWT
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.GoogleAuthRequest true "Google Auth Request"
+// @Success 200 {object} dto.GoogleAuthResponse
+// @Failure 401 {object} map[string]string
+// @Router /api/auth/google [post]
+func (c *authController) GoogleAuth(ctx *gin.Context) {
+	var req dto.GoogleAuthRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response, err := c.authService.GoogleAuth(req)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Authentication successful", response)
 }
