@@ -31,7 +31,7 @@ func NewAppProvider() AppProvider {
 	servicesProvider := NewServicesProvider(repositoriesProvider, configProvider)
 	controllerProvider := NewControllerProvider(servicesProvider)
 	middlewareProvider := NewMiddlewareProvider(servicesProvider)
-	configProvider.ProvideDatabaseConfig().AutoMigrateAll(&entity.User{}, &entity.Report{}, &entity.Achievement{}, &entity.UserAchievement{})
+	configProvider.ProvideDatabaseConfig().AutoMigrateAll(&entity.User{}, &entity.Report{}, &entity.Achievement{}, &entity.UserAchievement{}, &entity.Notification{})
 	seeder.SeedAchievements(configProvider.ProvideDatabaseConfig().GetInstance())
 
 	return &appProvider{

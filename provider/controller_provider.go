@@ -7,13 +7,15 @@ type ControllerProvider interface {
 	ProvideReportController() controllers.ReportController
 	ProvideAchievementController() controllers.AchievementController
 	ProvideRankController() controllers.RankController
+	ProvideNotificationController() controllers.NotificationController
 }
 
 type controllerProvider struct {
-	authController        controllers.AuthController
-	reportController      controllers.ReportController
-	achievementController controllers.AchievementController
-	rankController        controllers.RankController
+	authController         controllers.AuthController
+	reportController       controllers.ReportController
+	achievementController  controllers.AchievementController
+	rankController         controllers.RankController
+	notificationController controllers.NotificationController
 }
 
 func NewControllerProvider(servicesProvider ServicesProvider) ControllerProvider {
@@ -21,11 +23,13 @@ func NewControllerProvider(servicesProvider ServicesProvider) ControllerProvider
 	reportController := controllers.NewReportController(servicesProvider.ProvideReportService())
 	achievementController := controllers.NewAchievementController(servicesProvider.ProvideAchievementService())
 	rankController := controllers.NewRankController(servicesProvider.ProvideRankService())
+	notificationController := controllers.NewNotificationController(servicesProvider.ProvideNotificationService())
 	return &controllerProvider{
-		authController:        authController,
-		reportController:      reportController,
-		achievementController: achievementController,
-		rankController:        rankController,
+		authController:         authController,
+		reportController:       reportController,
+		achievementController:  achievementController,
+		rankController:         rankController,
+		notificationController: notificationController,
 	}
 }
 
@@ -43,4 +47,8 @@ func (c *controllerProvider) ProvideAchievementController() controllers.Achievem
 
 func (c *controllerProvider) ProvideRankController() controllers.RankController {
 	return c.rankController
+}
+
+func (c *controllerProvider) ProvideNotificationController() controllers.NotificationController {
+	return c.notificationController
 }

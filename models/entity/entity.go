@@ -58,3 +58,16 @@ type UserAchievement struct {
 	Achievement   Achievement `gorm:"foreignKey:AchievementID" json:"achievement"`
 	UnlockedAt    time.Time   `json:"unlocked_at"`
 }
+
+// Notification represents a user notification
+type Notification struct {
+	ID        uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
+	Type      string         `gorm:"type:varchar(50);not null" json:"type"`
+	Title     string         `gorm:"type:varchar(200);not null" json:"title"`
+	Message   string         `gorm:"type:text;not null" json:"message"`
+	Data      string         `gorm:"type:text" json:"data"`
+	IsRead    bool           `gorm:"default:false" json:"is_read"`
+	CreatedAt time.Time      `json:"created_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}

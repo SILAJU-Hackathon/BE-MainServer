@@ -15,4 +15,12 @@ const (
 
 	// Destruct Class
 	DESTRUCT_CLASS_GOOD = "good"
+
+	// Notification Types
+	NOTIF_TYPE_REPORT_STATUS   = "report_status"
+	NOTIF_TYPE_ACHIEVEMENT     = "achievement"
+	NOTIF_TYPE_LEVEL_UP        = "level_up"
+	NOTIF_TYPE_REPORT_ASSIGNED = "report_assigned"
+	NOTIF_TYPE_REPORT_VERIFIED = "report_verified"
+	NOTIF_TYPE_SYSTEM          = "system"
 )

@@ -7,13 +7,15 @@ type ServicesProvider interface {
 	ProvideReportService() services.ReportService
 	ProvideAchievementService() services.AchievementService
 	ProvideRankService() services.RankService
+	ProvideNotificationService() services.NotificationService
 }
 
 type servicesProvider struct {
-	authService        services.AuthService
-	reportService      services.ReportService
-	achievementService services.AchievementService
-	rankService        services.RankService
+	authService         services.AuthService
+	reportService       services.ReportService
+	achievementService  services.AchievementService
+	rankService         services.RankService
+	notificationService services.NotificationService
 }
 
 func NewServicesProvider(repoProvider RepositoriesProvider, configProvider ConfigProvider) ServicesProvider {
@@ -21,11 +23,13 @@ func NewServicesProvider(repoProvider RepositoriesProvider, configProvider Confi
 	rankService := services.NewRankService(repoProvider.ProvideUserRepository())
 	reportService := services.NewReportService(repoProvider.ProvideReportRepository(), repoProvider.ProvideUserRepository(), rankService)
 	achievementService := services.NewAchievementService(repoProvider.ProvideAchievementRepository(), rankService)
+	notificationService := services.NewNotificationService(repoProvider.ProvideNotificationRepository())
 	return &servicesProvider{
-		authService:        authService,
-		reportService:      reportService,
-		achievementService: achievementService,
-		rankService:        rankService,
+		authService:         authService,
+		reportService:       reportService,
+		achievementService:  achievementService,
+		rankService:         rankService,
+		notificationService: notificationService,
 	}
 }
 
@@ -43,4 +47,8 @@ func (s *servicesProvider) ProvideAchievementService() services.AchievementServi
 
 func (s *servicesProvider) ProvideRankService() services.RankService {
 	return s.rankService
+}
+
+func (s *servicesProvider) ProvideNotificationService() services.NotificationService {
+	return s.notificationService
 }

@@ -30,6 +30,9 @@ func RunRouter(appProvider provider.AppProvider) {
 	achievementRouter := NewAchievementRouter(controller.ProvideAchievementController(), controller.ProvideRankController())
 	achievementRouter.Setup(router.Group("/api"))
 
+	notificationRouter := NewNotificationRouter(controller.ProvideNotificationController())
+	notificationRouter.Setup(router.Group("/api"))
+
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	err := router.Run(config.ProvideEnvConfig().GetTCPAddress())

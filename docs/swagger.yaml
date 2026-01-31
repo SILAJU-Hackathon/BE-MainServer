@@ -68,6 +68,23 @@ definitions:
       token:
         type: string
     type: object
+  dto.CreateWorkerRequest:
+    properties:
+      email:
+        type: string
+      fullname:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - fullname
+    - password
+    - username
+    type: object
   dto.FullReportDetailResponse:
     properties:
       admin_notes:
@@ -151,6 +168,13 @@ definitions:
     - email
     - password
     type: object
+  dto.MarkNotificationReadRequest:
+    properties:
+      notification_id:
+        type: string
+    required:
+    - notification_id
+    type: object
   dto.NewAchievementResponse:
     properties:
       achievement_id:
@@ -163,6 +187,34 @@ definitions:
         type: string
       xp_reward:
         type: integer
+    type: object
+  dto.NotificationListResponse:
+    properties:
+      notifications:
+        items:
+          $ref: '#/definitions/dto.NotificationResponse'
+        type: array
+      total:
+        type: integer
+      unread_count:
+        type: integer
+    type: object
+  dto.NotificationResponse:
+    properties:
+      created_at:
+        type: string
+      data:
+        type: string
+      id:
+        type: string
+      is_read:
+        type: boolean
+      message:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
     type: object
   dto.PaginatedReportsResponse:
     properties:
@@ -256,6 +308,17 @@ definitions:
       user_id:
         type: string
     type: object
+  dto.UpdateWorkerRequest:
+    properties:
+      email:
+        type: string
+      fullname:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
   dto.UserRankResponse:
     properties:
       current_xp:
@@ -346,6 +409,21 @@ definitions:
         type: string
     required:
     - report_id
+    type: object
+  dto.WorkerResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      fullname:
+        type: string
+      id:
+        type: string
+      username:
+        type: string
+      verified:
+        type: boolean
     type: object
 info:
   contact:
@@ -545,6 +623,125 @@ paths:
       security:
       - BearerAuth: []
       summary: Verify Report by Admin
+      tags:
+      - Admin
+  /api/admin/worker:
+    post:
+      consumes:
+      - application/json
+      description: Create a new worker account (Admin only)
+      parameters:
+      - description: Create Worker Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateWorkerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WorkerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create Worker
+      tags:
+      - Admin
+  /api/admin/worker/{id}:
+    delete:
+      description: Delete a worker (Admin only)
+      parameters:
+      - description: Worker ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete Worker
+      tags:
+      - Admin
+    get:
+      description: Get worker details by ID (Admin only)
+      parameters:
+      - description: Worker ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WorkerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Worker By ID
+      tags:
+      - Admin
+    put:
+      consumes:
+      - application/json
+      description: Update worker details (Admin only)
+      parameters:
+      - description: Worker ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Worker Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateWorkerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WorkerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update Worker
       tags:
       - Admin
   /api/auth/admin/login:
@@ -898,6 +1095,115 @@ paths:
       summary: Get Leaderboard
       tags:
       - User
+  /api/user/notifications:
+    get:
+      description: Get paginated notifications for authenticated user
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.NotificationListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get User Notifications
+      tags:
+      - Notification
+  /api/user/notifications/read:
+    patch:
+      consumes:
+      - application/json
+      description: Mark a specific notification as read
+      parameters:
+      - description: Notification ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.MarkNotificationReadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Mark Notification as Read
+      tags:
+      - Notification
+  /api/user/notifications/read-all:
+    patch:
+      description: Mark all notifications as read for authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Mark All Notifications as Read
+      tags:
+      - Notification
+  /api/user/notifications/unread-count:
+    get:
+      description: Get count of unread notifications
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              format: int64
+              type: integer
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Unread Count
+      tags:
+      - Notification
   /api/user/rank:
     get:
       description: Get the logged-in user's rank, level, XP progress
