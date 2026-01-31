@@ -29,6 +29,9 @@ func RunRouter(appProvider provider.AppProvider) {
 	reportRouter := NewReportRouter(controller.ProvideReportController())
 	reportRouter.Setup(router.Group("/api"))
 
+	achievementRouter := NewAchievementRouter(controller.ProvideAchievementController())
+	achievementRouter.Setup(router.Group("/api"))
+
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	err := router.Run(config.ProvideEnvConfig().GetTCPAddress())

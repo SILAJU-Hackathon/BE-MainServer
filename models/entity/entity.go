@@ -39,3 +39,19 @@ type Report struct {
 	CreatedAt      time.Time      `json:"created_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
+
+type Achievement struct {
+	ID          string `gorm:"type:text;primary_key" json:"id"`
+	Name        string `gorm:"type:varchar(100);not null" json:"name"`
+	Description string `gorm:"type:text" json:"description"`
+	BadgeURL    string `gorm:"column:badge_url;type:text" json:"badge_url"`
+	Category    string `gorm:"type:varchar(50)" json:"category"` // milestone, quality, explorer, streak
+}
+
+type UserAchievement struct {
+	ID            uuid.UUID   `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID        uuid.UUID   `gorm:"type:uuid;not null" json:"user_id"`
+	AchievementID string      `gorm:"type:text;not null" json:"achievement_id"`
+	Achievement   Achievement `gorm:"foreignKey:AchievementID" json:"achievement"`
+	UnlockedAt    time.Time   `json:"unlocked_at"`
+}
