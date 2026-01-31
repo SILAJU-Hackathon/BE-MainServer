@@ -47,7 +47,9 @@ func (s *authService) RegisterUser(req dto.RegisterRequest) error {
 	if err != nil {
 		return err
 	}
-	if existingUser != nil {
+
+	// If user exists and is verified, reject registration
+	if existingUser != nil && existingUser.Verified {
 		return errors.New("email already registered")
 	}
 
@@ -56,17 +58,29 @@ func (s *authService) RegisterUser(req dto.RegisterRequest) error {
 		return err
 	}
 
-	user := &entity.User{
-		Username: req.Username,
-		Fullname: req.FullName,
-		Email:    req.Email,
-		Role:     "user",
-		Password: hashedPassword,
-		Verified: false,
-	}
+	// If user exists but not verified, update their info
+	if existingUser != nil && !existingUser.Verified {
+		existingUser.Username = req.Username
+		existingUser.Fullname = req.FullName
+		existingUser.Password = hashedPassword
 
-	if err := s.userRepo.CreateUser(user); err != nil {
-		return err
+		if err := s.userRepo.UpdateUser(existingUser); err != nil {
+			return err
+		}
+	} else {
+		// New user registration
+		user := &entity.User{
+			Username: req.Username,
+			Fullname: req.FullName,
+			Email:    req.Email,
+			Role:     "user",
+			Password: hashedPassword,
+			Verified: false,
+		}
+
+		if err := s.userRepo.CreateUser(user); err != nil {
+			return err
+		}
 	}
 
 	otp := utils.GenerateOTP()
