@@ -23,6 +23,66 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/admin/auth/assign": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Assign worker role to a user (Admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Assign Worker Role",
+                "parameters": [
+                    {
+                        "description": "Assign Worker Role Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AssignWorkerRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/report": {
             "get": {
                 "security": [
@@ -948,6 +1008,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/user/report/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get report statistics for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User Report Stats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserReportStatsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/worker/report": {
             "patch": {
                 "security": [
@@ -1280,6 +1374,17 @@ const docTemplate = `{
                 "report_id": {
                     "type": "string"
                 },
+                "worker_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AssignWorkerRoleRequest": {
+            "type": "object",
+            "required": [
+                "worker_id"
+            ],
+            "properties": {
                 "worker_id": {
                     "type": "string"
                 }
@@ -1672,6 +1777,20 @@ const docTemplate = `{
                 },
                 "total_score": {
                     "type": "number"
+                }
+            }
+        },
+        "dto.UserReportStatsResponse": {
+            "type": "object",
+            "properties": {
+                "in_progress": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "verified": {
+                    "type": "integer"
                 }
             }
         },

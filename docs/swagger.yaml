@@ -43,6 +43,13 @@ definitions:
     - report_id
     - worker_id
     type: object
+  dto.AssignWorkerRoleRequest:
+    properties:
+      worker_id:
+        type: string
+    required:
+    - worker_id
+    type: object
   dto.AssignedWorkerResponse:
     properties:
       latitude:
@@ -299,6 +306,15 @@ definitions:
       total_score:
         type: number
     type: object
+  dto.UserReportStatsResponse:
+    properties:
+      in_progress:
+        type: integer
+      total:
+        type: integer
+      verified:
+        type: integer
+    type: object
   dto.UserResponse:
     properties:
       email:
@@ -343,6 +359,44 @@ info:
   title: Dinacom 11.0 Backend API
   version: "1.0"
 paths:
+  /api/admin/auth/assign:
+    post:
+      consumes:
+      - application/json
+      description: Assign worker role to a user (Admin only)
+      parameters:
+      - description: Assign Worker Role Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AssignWorkerRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Assign Worker Role
+      tags:
+      - Admin
   /api/admin/report:
     get:
       description: Get all reports with optional status filter and pagination
@@ -931,6 +985,27 @@ paths:
       security:
       - BearerAuth: []
       summary: Get User's Reports
+      tags:
+      - User
+  /api/user/report/stats:
+    get:
+      description: Get report statistics for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserReportStatsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get User Report Stats
       tags:
       - User
   /api/worker/report:
