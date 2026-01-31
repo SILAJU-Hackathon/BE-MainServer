@@ -23,3 +23,9 @@ type ReportResponse struct {
 	TotalScore     float64   `json:"total_score"`
 	Status         string    `json:"status"`
 }
+
+type UserReportStatsResponse struct {
+	Total      int64 `json:"total"`
+	Verified   int64 `json:"verified"`
+	InProgress int64 `json:"in_progress"`
+}

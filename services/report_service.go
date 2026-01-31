@@ -34,20 +34,27 @@ type ReportService interface {
 	GetWorkerAssignedReports(workerID uuid.UUID, page, limit int) (*dto.PaginatedReportsResponse, error)
 	GetWorkerHistory(workerID uuid.UUID, verifyAdmin bool, page, limit int) (*dto.PaginatedReportsResponse, error)
 	VerifyReport(reportID string) error
+	GetReportDetail(workerID uuid.UUID, reportID string) (*dto.ReportDetailResponse, error)
+	GetReportImage(workerID uuid.UUID, reportID string) (*dto.ReportImageResponse, error)
+	GetAllReportsAdmin(status string, page, limit int) (*dto.PaginatedReportsResponse, error)
+	GetFullReportDetail(reportID string) (*dto.FullReportDetailResponse, error)
+	GetUserReportStats(userID uuid.UUID) (*dto.UserReportStatsResponse, error)
 }
 
 type reportService struct {
 	reportRepo       repositories.ReportRepository
 	userRepo         repositories.UserRepository
 	cloudinaryClient *utils.CloudinaryClient
+	rankService      RankService
 }
 
-func NewReportService(reportRepo repositories.ReportRepository, userRepo repositories.UserRepository) ReportService {
+func NewReportService(reportRepo repositories.ReportRepository, userRepo repositories.UserRepository, rankService RankService) ReportService {
 	client, _ := utils.NewCloudinaryClient()
 	return &reportService{
 		reportRepo:       reportRepo,
 		userRepo:         userRepo,
 		cloudinaryClient: client,
+		rankService:      rankService,
 	}
 }
 
@@ -225,7 +232,7 @@ func (s *reportService) GetWorkerHistory(workerID uuid.UUID, verifyAdmin bool, p
 	offset := (page - 1) * limit
 	status := entity.STATUS_FINISH_BY_WORKER
 	if verifyAdmin {
-		status = entity.STATUS_FINISHED
+		status = entity.STATUS_VERIFIED
 	}
 
 	reports, total, err := s.reportRepo.GetWorkerHistory(workerID, status, limit, offset)
@@ -246,7 +253,15 @@ func (s *reportService) VerifyReport(reportID string) error {
 		return http_error.ONLY_FINISH_BY_WORKER_VERIFY
 	}
 
-	return s.reportRepo.UpdateStatus(reportID, entity.STATUS_FINISHED)
+	if err := s.reportRepo.UpdateStatus(reportID, entity.STATUS_VERIFIED); err != nil {
+		return err
+	}
+
+	// Award XP for verified report (50 XP)
+	// We ignore error here as it shouldn't block the verification process
+	s.rankService.AddXPToUser(report.UserID, 50)
+
+	return nil
 }
 
 func (s *reportService) buildPaginatedResponse(reports []entity.Report, total int64, page, limit int) *dto.PaginatedReportsResponse {
@@ -282,4 +297,94 @@ func (s *reportService) buildPaginatedResponse(reports []entity.Report, total in
 		Limit:      limit,
 		TotalPages: totalPages,
 	}
+}
+
+func (s *reportService) GetReportDetail(workerID uuid.UUID, reportID string) (*dto.ReportDetailResponse, error) {
+	report, err := s.reportRepo.GetReportByID(reportID)
+	if err != nil {
+		return nil, http_error.REPORT_NOT_FOUND
+	}
+
+	if report.WorkerID == nil || *report.WorkerID != workerID {
+		return nil, http_error.NOT_ASSIGNED_TO_REPORT
+	}
+
+	return &dto.ReportDetailResponse{
+		BeforeImageURL: report.BeforeImageURL,
+		RoadName:       report.RoadName,
+		Deadline:       report.Deadline,
+		TotalScore:     report.TotalScore,
+		DestructClass:  report.DestructClass,
+		AdminNotes:     report.AdminNotes,
+	}, nil
+}
+
+func (s *reportService) GetReportImage(workerID uuid.UUID, reportID string) (*dto.ReportImageResponse, error) {
+	report, err := s.reportRepo.GetReportByID(reportID)
+	if err != nil {
+		return nil, http_error.REPORT_NOT_FOUND
+	}
+
+	if report.WorkerID == nil || *report.WorkerID != workerID {
+		return nil, http_error.NOT_ASSIGNED_TO_REPORT
+	}
+
+	return &dto.ReportImageResponse{
+		BeforeImageURL: report.BeforeImageURL,
+	}, nil
+}
+
+func (s *reportService) GetAllReportsAdmin(status string, page, limit int) (*dto.PaginatedReportsResponse, error) {
+	offset := (page - 1) * limit
+	reports, total, err := s.reportRepo.GetAllReports(status, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildPaginatedResponse(reports, total, page, limit), nil
+}
+
+func (s *reportService) GetFullReportDetail(reportID string) (*dto.FullReportDetailResponse, error) {
+	report, err := s.reportRepo.GetReportByID(reportID)
+	if err != nil {
+		return nil, http_error.REPORT_NOT_FOUND
+	}
+
+	var workerIDStr *string
+	if report.WorkerID != nil {
+		str := report.WorkerID.String()
+		workerIDStr = &str
+	}
+
+	return &dto.FullReportDetailResponse{
+		ID:             report.ID,
+		UserID:         report.UserID.String(),
+		WorkerID:       workerIDStr,
+		Longitude:      report.Longitude,
+		Latitude:       report.Latitude,
+		RoadName:       report.RoadName,
+		BeforeImageURL: report.BeforeImageURL,
+		AfterImageURL:  report.AfterImageURL,
+		Description:    report.Description,
+		DestructClass:  report.DestructClass,
+		LocationScore:  report.LocationScore,
+		TotalScore:     report.TotalScore,
+		Status:         report.Status,
+		AdminNotes:     report.AdminNotes,
+		Deadline:       report.Deadline,
+		CreatedAt:      report.CreatedAt,
+	}, nil
+}
+
+func (s *reportService) GetUserReportStats(userID uuid.UUID) (*dto.UserReportStatsResponse, error) {
+	total, verified, inProgress, err := s.reportRepo.GetUserReportStats(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.UserReportStatsResponse{
+		Total:      total,
+		Verified:   verified,
+		InProgress: inProgress,
+	}, nil
 }

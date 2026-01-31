@@ -5,19 +5,31 @@ import "dinacom-11.0-backend/services"
 type ServicesProvider interface {
 	ProvideAuthService() services.AuthService
 	ProvideReportService() services.ReportService
+	ProvideAchievementService() services.AchievementService
+	ProvideRankService() services.RankService
+	ProvideNotificationService() services.NotificationService
 }
 
 type servicesProvider struct {
-	authService   services.AuthService
-	reportService services.ReportService
+	authService         services.AuthService
+	reportService       services.ReportService
+	achievementService  services.AchievementService
+	rankService         services.RankService
+	notificationService services.NotificationService
 }
 
 func NewServicesProvider(repoProvider RepositoriesProvider, configProvider ConfigProvider) ServicesProvider {
 	authService := services.NewAuthService(repoProvider.ProvideUserRepository())
-	reportService := services.NewReportService(repoProvider.ProvideReportRepository(), repoProvider.ProvideUserRepository())
+	rankService := services.NewRankService(repoProvider.ProvideUserRepository())
+	reportService := services.NewReportService(repoProvider.ProvideReportRepository(), repoProvider.ProvideUserRepository(), rankService)
+	achievementService := services.NewAchievementService(repoProvider.ProvideAchievementRepository(), rankService)
+	notificationService := services.NewNotificationService(repoProvider.ProvideNotificationRepository())
 	return &servicesProvider{
-		authService:   authService,
-		reportService: reportService,
+		authService:         authService,
+		reportService:       reportService,
+		achievementService:  achievementService,
+		rankService:         rankService,
+		notificationService: notificationService,
 	}
 }
 
@@ -27,4 +39,16 @@ func (s *servicesProvider) ProvideAuthService() services.AuthService {
 
 func (s *servicesProvider) ProvideReportService() services.ReportService {
 	return s.reportService
+}
+
+func (s *servicesProvider) ProvideAchievementService() services.AchievementService {
+	return s.achievementService
+}
+
+func (s *servicesProvider) ProvideRankService() services.RankService {
+	return s.rankService
+}
+
+func (s *servicesProvider) ProvideNotificationService() services.NotificationService {
+	return s.notificationService
 }

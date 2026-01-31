@@ -21,6 +21,11 @@ type AuthController interface {
 	GetProfile(ctx *gin.Context)
 	GetAllUsers(ctx *gin.Context)
 	GetAllWorkers(ctx *gin.Context)
+	AssignWorkerRole(ctx *gin.Context)
+	CreateWorker(ctx *gin.Context)
+	GetWorkerByID(ctx *gin.Context)
+	UpdateWorker(ctx *gin.Context)
+	DeleteWorker(ctx *gin.Context)
 }
 
 type authController struct {
@@ -239,4 +244,141 @@ func (c *authController) GoogleAuth(ctx *gin.Context) {
 	}
 
 	utils.SendSuccessResponse(ctx, "Authentication successful", response)
+}
+
+// @Summary Assign Worker Role
+// @Description Assign worker role to a user (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body dto.AssignWorkerRoleRequest true "Assign Worker Role Request"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Router /api/admin/auth/assign [post]
+func (c *authController) AssignWorkerRole(ctx *gin.Context) {
+	var req dto.AssignWorkerRoleRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := c.authService.AssignWorkerRole(req.WorkerID); err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Worker role assigned successfully", nil)
+}
+
+// @Summary Create Worker
+// @Description Create a new worker account (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body dto.CreateWorkerRequest true "Create Worker Request"
+// @Success 200 {object} dto.WorkerResponse
+// @Failure 400 {object} map[string]string
+// @Router /api/admin/worker [post]
+func (c *authController) CreateWorker(ctx *gin.Context) {
+	var req dto.CreateWorkerRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	worker, err := c.authService.CreateWorker(req)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Worker created successfully", worker)
+}
+
+// @Summary Get Worker By ID
+// @Description Get worker details by ID (Admin only)
+// @Tags Admin
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Worker ID"
+// @Success 200 {object} dto.WorkerResponse
+// @Failure 400 {object} map[string]string
+// @Router /api/admin/worker/{id} [get]
+func (c *authController) GetWorkerByID(ctx *gin.Context) {
+	workerIDStr := ctx.Param("id")
+	workerID, err := uuid.Parse(workerIDStr)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, "Invalid worker ID")
+		return
+	}
+
+	worker, err := c.authService.GetWorkerByID(workerID)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Worker retrieved successfully", worker)
+}
+
+// @Summary Update Worker
+// @Description Update worker details (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Worker ID"
+// @Param request body dto.UpdateWorkerRequest true "Update Worker Request"
+// @Success 200 {object} dto.WorkerResponse
+// @Failure 400 {object} map[string]string
+// @Router /api/admin/worker/{id} [put]
+func (c *authController) UpdateWorker(ctx *gin.Context) {
+	workerIDStr := ctx.Param("id")
+	workerID, err := uuid.Parse(workerIDStr)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, "Invalid worker ID")
+		return
+	}
+
+	var req dto.UpdateWorkerRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	worker, err := c.authService.UpdateWorker(workerID, req)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Worker updated successfully", worker)
+}
+
+// @Summary Delete Worker
+// @Description Delete a worker (Admin only)
+// @Tags Admin
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Worker ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /api/admin/worker/{id} [delete]
+func (c *authController) DeleteWorker(ctx *gin.Context) {
+	workerIDStr := ctx.Param("id")
+	workerID, err := uuid.Parse(workerIDStr)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, "Invalid worker ID")
+		return
+	}
+
+	if err := c.authService.DeleteWorker(workerID); err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Worker deleted successfully", nil)
 }

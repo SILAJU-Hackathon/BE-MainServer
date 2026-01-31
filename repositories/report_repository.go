@@ -20,6 +20,8 @@ type ReportRepository interface {
 	GetAssignedReportsByWorkerID(workerID uuid.UUID, limit, offset int) ([]entity.Report, int64, error)
 	GetWorkerHistory(workerID uuid.UUID, status string, limit, offset int) ([]entity.Report, int64, error)
 	UpdateStatus(reportID string, status string) error
+	GetAllReports(status string, limit, offset int) ([]entity.Report, int64, error)
+	GetUserReportStats(userID uuid.UUID) (total, verified, inProgress int64, err error)
 }
 
 type reportRepository struct {
@@ -97,4 +99,35 @@ func (r *reportRepository) GetWorkerHistory(workerID uuid.UUID, status string, l
 
 func (r *reportRepository) UpdateStatus(reportID string, status string) error {
 	return r.db.Model(&entity.Report{}).Where("id = ?", reportID).Update("status", status).Error
+}
+
+func (r *reportRepository) GetAllReports(status string, limit, offset int) ([]entity.Report, int64, error) {
+	var reports []entity.Report
+	var total int64
+
+	query := r.db.Model(&entity.Report{})
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	query.Count(&total)
+	err := query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&reports).Error
+	return reports, total, err
+}
+
+func (r *reportRepository) GetUserReportStats(userID uuid.UUID) (total, verified, inProgress int64, err error) {
+	// Total reports by user
+	r.db.Model(&entity.Report{}).Where("user_id = ?", userID).Count(&total)
+
+	// Verified reports
+	r.db.Model(&entity.Report{}).Where("user_id = ? AND status = ?", userID, entity.STATUS_VERIFIED).Count(&verified)
+
+	// In Progress reports (assigned or finish by worker, not yet verified)
+	r.db.Model(&entity.Report{}).Where("user_id = ? AND status IN ?", userID, []string{
+		entity.STATUS_PENDING,
+		entity.STATUS_ASSIGNED,
+		entity.STATUS_FINISH_BY_WORKER,
+	}).Count(&inProgress)
+
+	return total, verified, inProgress, nil
 }

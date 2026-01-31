@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"sync"
 
 	"dinacom-11.0-backend/models/dto"
 	entity "dinacom-11.0-backend/models/entity"
@@ -14,7 +13,7 @@ import (
 
 type AuthService interface {
 	RegisterUser(req dto.RegisterRequest) error
-	VerifyOTP(req dto.VerifyOTPRequest) (string, error)
+	VerifyOTP(req dto.VerifyOTPRequest) (string, error) // Deprecated but kept for compatibility
 	LoginUser(req dto.LoginRequest) (string, error)
 	LoginAdmin(req dto.LoginRequest) (string, error)
 	LoginWorker(req dto.LoginRequest) (string, error)
@@ -22,18 +21,20 @@ type AuthService interface {
 	GetProfile(userID uuid.UUID) (*dto.UserResponse, error)
 	GetAllUsers() ([]dto.UserResponse, error)
 	GetAllWorkers() ([]dto.UserResponse, error)
+	AssignWorkerRole(userID uuid.UUID) error
+	CreateWorker(req dto.CreateWorkerRequest) (*dto.WorkerResponse, error)
+	GetWorkerByID(workerID uuid.UUID) (*dto.WorkerResponse, error)
+	UpdateWorker(workerID uuid.UUID, req dto.UpdateWorkerRequest) (*dto.WorkerResponse, error)
+	DeleteWorker(workerID uuid.UUID) error
 }
 
 type authService struct {
 	userRepo repositories.UserRepository
-	otpStore map[string]string
-	mutex    sync.RWMutex
 }
 
 func NewAuthService(userRepo repositories.UserRepository) AuthService {
 	return &authService{
 		userRepo: userRepo,
-		otpStore: make(map[string]string),
 	}
 }
 
@@ -42,6 +43,8 @@ func (s *authService) RegisterUser(req dto.RegisterRequest) error {
 	if err != nil {
 		return err
 	}
+
+	// If user already exists, reject registration
 	if existingUser != nil {
 		return errors.New("email already registered")
 	}
@@ -51,53 +54,26 @@ func (s *authService) RegisterUser(req dto.RegisterRequest) error {
 		return err
 	}
 
+	// Create new user (verified by default, no OTP needed)
 	user := &entity.User{
 		Username: req.Username,
 		Fullname: req.FullName,
 		Email:    req.Email,
 		Role:     "user",
 		Password: hashedPassword,
-		Verified: false,
+		Verified: true,
 	}
 
 	if err := s.userRepo.CreateUser(user); err != nil {
 		return err
 	}
 
-	otp := utils.GenerateOTP()
-
-	s.mutex.Lock()
-	s.otpStore[req.Email] = otp
-	s.mutex.Unlock()
-
-	utils.SendOTP(req.Email, otp)
-
 	return nil
 }
 
+// VerifyOTP is deprecated - users are now verified on registration
 func (s *authService) VerifyOTP(req dto.VerifyOTPRequest) (string, error) {
-	s.mutex.RLock()
-	storedOTP, exists := s.otpStore[req.Email]
-	s.mutex.RUnlock()
-
-	if !exists || storedOTP != req.OTP {
-		return "", errors.New("invalid or expired OTP")
-	}
-
-	if err := s.userRepo.UpdateUserVerified(req.Email, true); err != nil {
-		return "", err
-	}
-
-	user, err := s.userRepo.FindUserByEmail(req.Email)
-	if err != nil {
-		return "", err
-	}
-
-	s.mutex.Lock()
-	delete(s.otpStore, req.Email)
-	s.mutex.Unlock()
-
-	return utils.GenerateAccessToken(user.ID, user.Role, user.Email)
+	return "", errors.New("OTP verification is no longer required")
 }
 
 func (s *authService) LoginUser(req dto.LoginRequest) (string, error) {
@@ -261,4 +237,134 @@ func (s *authService) GoogleAuth(req dto.GoogleAuthRequest) (*dto.GoogleAuthResp
 			IsNewUser: isNewUser,
 		},
 	}, nil
+}
+
+func (s *authService) AssignWorkerRole(userID uuid.UUID) error {
+	user, err := s.userRepo.FindUserByID(userID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+
+	user.Role = entity.ROLE_WORKER
+	return s.userRepo.UpdateUser(user)
+}
+
+func (s *authService) CreateWorker(req dto.CreateWorkerRequest) (*dto.WorkerResponse, error) {
+	existingUser, err := s.userRepo.FindUserByEmail(req.Email)
+	if err != nil {
+		return nil, err
+	}
+	if existingUser != nil {
+		return nil, errors.New("email already registered")
+	}
+
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	worker := &entity.User{
+		Username: req.Username,
+		Fullname: req.Fullname,
+		Email:    req.Email,
+		Role:     entity.ROLE_WORKER,
+		Password: hashedPassword,
+		Verified: true,
+	}
+
+	if err := s.userRepo.CreateUser(worker); err != nil {
+		return nil, err
+	}
+
+	return &dto.WorkerResponse{
+		ID:        worker.ID,
+		Username:  worker.Username,
+		Fullname:  worker.Fullname,
+		Email:     worker.Email,
+		Verified:  worker.Verified,
+		CreatedAt: worker.CreatedAt.Format("2006-01-02 15:04:05"),
+	}, nil
+}
+
+func (s *authService) GetWorkerByID(workerID uuid.UUID) (*dto.WorkerResponse, error) {
+	worker, err := s.userRepo.FindUserByID(workerID)
+	if err != nil {
+		return nil, err
+	}
+	if worker == nil {
+		return nil, errors.New("worker not found")
+	}
+	if worker.Role != entity.ROLE_WORKER {
+		return nil, errors.New("user is not a worker")
+	}
+
+	return &dto.WorkerResponse{
+		ID:        worker.ID,
+		Username:  worker.Username,
+		Fullname:  worker.Fullname,
+		Email:     worker.Email,
+		Verified:  worker.Verified,
+		CreatedAt: worker.CreatedAt.Format("2006-01-02 15:04:05"),
+	}, nil
+}
+
+func (s *authService) UpdateWorker(workerID uuid.UUID, req dto.UpdateWorkerRequest) (*dto.WorkerResponse, error) {
+	worker, err := s.userRepo.FindUserByID(workerID)
+	if err != nil {
+		return nil, err
+	}
+	if worker == nil {
+		return nil, errors.New("worker not found")
+	}
+	if worker.Role != entity.ROLE_WORKER {
+		return nil, errors.New("user is not a worker")
+	}
+
+	if req.Fullname != "" {
+		worker.Fullname = req.Fullname
+	}
+	if req.Username != "" {
+		worker.Username = req.Username
+	}
+	if req.Email != "" {
+		worker.Email = req.Email
+	}
+	if req.Password != "" {
+		hashedPassword, err := utils.HashPassword(req.Password)
+		if err != nil {
+			return nil, err
+		}
+		worker.Password = hashedPassword
+	}
+
+	if err := s.userRepo.UpdateUser(worker); err != nil {
+		return nil, err
+	}
+
+	return &dto.WorkerResponse{
+		ID:        worker.ID,
+		Username:  worker.Username,
+		Fullname:  worker.Fullname,
+		Email:     worker.Email,
+		Verified:  worker.Verified,
+		CreatedAt: worker.CreatedAt.Format("2006-01-02 15:04:05"),
+	}, nil
+}
+
+func (s *authService) DeleteWorker(workerID uuid.UUID) error {
+	worker, err := s.userRepo.FindUserByID(workerID)
+	if err != nil {
+		return err
+	}
+	if worker == nil {
+		return errors.New("worker not found")
+	}
+	if worker.Role != entity.ROLE_WORKER {
+		return errors.New("user is not a worker")
+	}
+
+	return s.userRepo.DeleteUser(workerID)
 }

@@ -2,6 +2,8 @@ package provider
 
 import (
 	"dinacom-11.0-backend/models/entity"
+	"dinacom-11.0-backend/seeder"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,7 +31,8 @@ func NewAppProvider() AppProvider {
 	servicesProvider := NewServicesProvider(repositoriesProvider, configProvider)
 	controllerProvider := NewControllerProvider(servicesProvider)
 	middlewareProvider := NewMiddlewareProvider(servicesProvider)
-	configProvider.ProvideDatabaseConfig().AutoMigrateAll(&entity.User{}, &entity.Report{})
+	configProvider.ProvideDatabaseConfig().AutoMigrateAll(&entity.User{}, &entity.Report{}, &entity.Achievement{}, &entity.UserAchievement{}, &entity.Notification{})
+	seeder.SeedAchievements(configProvider.ProvideDatabaseConfig().GetInstance())
 
 	return &appProvider{
 		ginRouter:            ginRouter,

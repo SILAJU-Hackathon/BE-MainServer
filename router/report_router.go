@@ -27,10 +27,13 @@ func (r *reportRouter) Setup(router *gin.RouterGroup) {
 	userReportGroup.Use(middleware.AuthMiddleware())
 	userReportGroup.POST("", r.reportController.CreateReport)
 	userReportGroup.GET("/me", r.reportController.GetUserReports)
+	userReportGroup.GET("/stats", r.reportController.GetUserReportStats)
 
 	adminGroup := router.Group("/admin/report")
 	adminGroup.Use(middleware.AuthMiddleware())
 	adminGroup.Use(middleware.RoleMiddleware(entity.ROLE_ADMIN))
+	adminGroup.GET("", r.reportController.GetAllReportsAdmin)
+	adminGroup.GET("/detail", r.reportController.GetFullReportDetail)
 	adminGroup.PATCH("/assign", r.reportController.AssignWorker)
 	adminGroup.GET("/assign", r.reportController.GetAssignedReports)
 	adminGroup.PATCH("/verify", r.reportController.VerifyReport)
@@ -40,5 +43,7 @@ func (r *reportRouter) Setup(router *gin.RouterGroup) {
 	workerGroup.Use(middleware.RoleMiddleware(entity.ROLE_WORKER, entity.ROLE_ADMIN))
 	workerGroup.PATCH("/report", r.reportController.FinishReport)
 	workerGroup.GET("/report/assign/me", r.reportController.GetWorkerAssignedReports)
+	workerGroup.GET("/report/assign/detail", r.reportController.GetReportDetail)
+	workerGroup.GET("/report/assign/image", r.reportController.GetReportImage)
 	workerGroup.GET("/report/history/me", r.reportController.GetWorkerHistory)
 }

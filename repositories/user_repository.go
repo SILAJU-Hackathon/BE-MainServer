@@ -14,8 +14,11 @@ type UserRepository interface {
 	FindUserByEmail(email string) (*entity.User, error)
 	FindUserByID(id uuid.UUID) (*entity.User, error)
 	UpdateUserVerified(email string, verified bool) error
+	UpdateUser(user *entity.User) error
+	GetTopUsersByXP(limit int) ([]entity.User, error)
 	GetAllUsers() ([]entity.User, error)
 	GetUsersByRole(role string) ([]entity.User, error)
+	DeleteUser(id uuid.UUID) error
 }
 
 type userRepository struct {
@@ -68,4 +71,18 @@ func (r *userRepository) GetUsersByRole(role string) ([]entity.User, error) {
 	var users []entity.User
 	err := r.db.Where("role = ?", role).Find(&users).Error
 	return users, err
+}
+
+func (r *userRepository) UpdateUser(user *entity.User) error {
+	return r.db.Save(user).Error
+}
+
+func (r *userRepository) GetTopUsersByXP(limit int) ([]entity.User, error) {
+	var users []entity.User
+	err := r.db.Order("total_xp DESC").Limit(limit).Find(&users).Error
+	return users, err
+}
+
+func (r *userRepository) DeleteUser(id uuid.UUID) error {
+	return r.db.Delete(&entity.User{}, "id = ?", id).Error
 }

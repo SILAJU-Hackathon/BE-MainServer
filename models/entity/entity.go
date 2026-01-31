@@ -15,6 +15,8 @@ type User struct {
 	Role      string         `gorm:"type:varchar(20);not null;default:'user'" json:"role"` // user, admin, worker
 	Password  string         `gorm:"type:varchar(255);not null" json:"-"`
 	Verified  bool           `gorm:"default:false" json:"verified"`
+	TotalXP   int            `gorm:"default:0" json:"total_xp"`
+	Level     int            `gorm:"default:1" json:"level"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
@@ -38,4 +40,34 @@ type Report struct {
 	Deadline       *time.Time     `gorm:"column:deadline;type:timestamp" json:"deadline"`
 	CreatedAt      time.Time      `json:"created_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+}
+
+type Achievement struct {
+	ID          string `gorm:"type:text;primary_key" json:"id"`
+	Name        string `gorm:"type:varchar(100);not null" json:"name"`
+	Description string `gorm:"type:text" json:"description"`
+	BadgeURL    string `gorm:"column:badge_url;type:text" json:"badge_url"`
+	Category    string `gorm:"type:varchar(50)" json:"category"` // milestone, quality, explorer, streak
+	XPReward    int    `gorm:"column:xp_reward;default:0" json:"xp_reward"`
+}
+
+type UserAchievement struct {
+	ID            uuid.UUID   `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID        uuid.UUID   `gorm:"type:uuid;not null" json:"user_id"`
+	AchievementID string      `gorm:"type:text;not null" json:"achievement_id"`
+	Achievement   Achievement `gorm:"foreignKey:AchievementID" json:"achievement"`
+	UnlockedAt    time.Time   `json:"unlocked_at"`
+}
+
+// Notification represents a user notification
+type Notification struct {
+	ID        uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
+	Type      string         `gorm:"type:varchar(50);not null" json:"type"`
+	Title     string         `gorm:"type:varchar(200);not null" json:"title"`
+	Message   string         `gorm:"type:text;not null" json:"message"`
+	Data      string         `gorm:"type:text" json:"data"`
+	IsRead    bool           `gorm:"default:false" json:"is_read"`
+	CreatedAt time.Time      `json:"created_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
