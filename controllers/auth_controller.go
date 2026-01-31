@@ -8,6 +8,7 @@ import (
 	"dinacom-11.0-backend/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type AuthController interface {
@@ -16,6 +17,9 @@ type AuthController interface {
 	LoginUser(ctx *gin.Context)
 	LoginAdmin(ctx *gin.Context)
 	LoginWorker(ctx *gin.Context)
+	GetProfile(ctx *gin.Context)
+	GetAllUsers(ctx *gin.Context)
+	GetAllWorkers(ctx *gin.Context)
 }
 
 type authController struct {
@@ -26,7 +30,6 @@ func NewAuthController(authService services.AuthService) AuthController {
 	return &authController{authService: authService}
 }
 
-// RegisterUser godoc
 // @Summary Register a new user
 // @Description Register a new user with email verification via OTP
 // @Tags Auth
@@ -51,7 +54,6 @@ func (c *authController) RegisterUser(ctx *gin.Context) {
 	utils.SendSuccessResponse(ctx, "OTP sent to email", nil)
 }
 
-// VerifyOTP godoc
 // @Summary Verify OTP
 // @Description Verify OTP to activate user account and get access token
 // @Tags Auth
@@ -77,7 +79,6 @@ func (c *authController) VerifyOTP(ctx *gin.Context) {
 	utils.SendSuccessResponse(ctx, "Verification successful", dto.AuthResponse{Token: token})
 }
 
-// LoginUser godoc
 // @Summary Login User
 // @Description Login for users
 // @Tags Auth
@@ -103,7 +104,6 @@ func (c *authController) LoginUser(ctx *gin.Context) {
 	utils.SendSuccessResponse(ctx, "Login successful", dto.AuthResponse{Token: token})
 }
 
-// LoginAdmin godoc
 // @Summary Login Admin
 // @Description Login for admins
 // @Tags Auth
@@ -129,7 +129,6 @@ func (c *authController) LoginAdmin(ctx *gin.Context) {
 	utils.SendSuccessResponse(ctx, "Login successful", dto.AuthResponse{Token: token})
 }
 
-// LoginWorker godoc
 // @Summary Login Worker
 // @Description Login for workers
 // @Tags Auth
@@ -153,4 +152,65 @@ func (c *authController) LoginWorker(ctx *gin.Context) {
 	}
 
 	utils.SendSuccessResponse(ctx, "Login successful", dto.AuthResponse{Token: token})
+}
+
+// @Summary Get Profile
+// @Description Get current user's profile
+// @Tags Auth
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.UserResponse
+// @Failure 401 {object} map[string]string
+// @Router /api/auth/me [get]
+func (c *authController) GetProfile(ctx *gin.Context) {
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		utils.SendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	userID := userIDVal.(uuid.UUID)
+	profile, err := c.authService.GetProfile(userID)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusNotFound, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Profile retrieved", profile)
+}
+
+// @Summary Get All Users
+// @Description Get all users (Admin only)
+// @Tags Admin
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} dto.UserResponse
+// @Failure 403 {object} map[string]string
+// @Router /api/auth/admin/users [get]
+func (c *authController) GetAllUsers(ctx *gin.Context) {
+	users, err := c.authService.GetAllUsers()
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Users retrieved", users)
+}
+
+// @Summary Get All Workers
+// @Description Get all workers (Admin only)
+// @Tags Admin
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} dto.UserResponse
+// @Failure 403 {object} map[string]string
+// @Router /api/auth/admin/workers [get]
+func (c *authController) GetAllWorkers(ctx *gin.Context) {
+	workers, err := c.authService.GetAllWorkers()
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Workers retrieved", workers)
 }

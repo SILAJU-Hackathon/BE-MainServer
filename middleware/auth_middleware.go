@@ -17,13 +17,17 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		var tokenString string
 		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			tokenString = parts[1]
+		} else if len(parts) == 1 {
+			tokenString = parts[0]
+		} else {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
 			return
 		}
 
-		tokenString := parts[1]
 		claims, err := utils.ValidateToken(tokenString)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})

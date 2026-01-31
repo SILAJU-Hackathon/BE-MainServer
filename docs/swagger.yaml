@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   dto.AuthResponse:
     properties:
@@ -31,6 +32,48 @@ definitions:
     - password
     - username
     type: object
+  dto.ReportResponse:
+    properties:
+      after_image_url:
+        type: string
+      before_image_url:
+        type: string
+      description:
+        type: string
+      destruct_class:
+        type: string
+      id:
+        type: string
+      latitude:
+        type: number
+      location_score:
+        type: number
+      longitude:
+        type: number
+      road_name:
+        type: string
+      status:
+        type: string
+      total_score:
+        type: number
+      user_id:
+        type: string
+    type: object
+  dto.UserResponse:
+    properties:
+      email:
+        type: string
+      fullname:
+        type: string
+      id:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+      verified:
+        type: boolean
+    type: object
   dto.VerifyOTPRequest:
     properties:
       email:
@@ -41,8 +84,18 @@ definitions:
     - email
     - otp
     type: object
+host: localhost:8080
 info:
-  contact: {}
+  contact:
+    email: support@dinacom.com
+    name: API Support
+  description: Backend service for Dinacom 11.0 Hackathon
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Dinacom 11.0 Backend API
+  version: "1.0"
 paths:
   /api/auth/admin/login:
     post:
@@ -70,6 +123,73 @@ paths:
               type: string
             type: object
       summary: Login Admin
+      tags:
+      - Auth
+  /api/auth/admin/users:
+    get:
+      description: Get all users (Admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get All Users
+      tags:
+      - Admin
+  /api/auth/admin/workers:
+    get:
+      description: Get all workers (Admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get All Workers
+      tags:
+      - Admin
+  /api/auth/me:
+    get:
+      description: Get current user's profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Profile
       tags:
       - Auth
   /api/auth/user/login:
@@ -186,4 +306,44 @@ paths:
       summary: Login Worker
       tags:
       - Auth
+  /api/report:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Submit a new report with image and location data
+      parameters:
+      - description: Image file (JPG, PNG, JPEG, max 32MB)
+        in: formData
+        name: files
+        required: true
+        type: file
+      - description: 'JSON data: {\'
+        in: formData
+        name: json
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create Report
+      tags:
+      - Report
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

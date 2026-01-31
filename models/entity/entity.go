@@ -19,3 +19,20 @@ type User struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
+
+type Report struct {
+	ID             string         `gorm:"type:text;primary_key" json:"id"`
+	UserID         uuid.UUID      `gorm:"type:uuid" json:"user_id"`
+	Longitude      float64        `gorm:"type:numeric" json:"longitude"`
+	Latitude       float64        `gorm:"type:numeric" json:"latitude"`
+	RoadName       string         `gorm:"column:road_name;type:text" json:"road_name"`
+	BeforeImageURL string         `gorm:"column:before_image_url;type:text" json:"before_image_url"`
+	AfterImageURL  string         `gorm:"column:after_image_url;type:text" json:"after_image_url"`
+	Description    string         `gorm:"type:text" json:"description"`
+	DestructClass  string         `gorm:"column:destruct_class;type:text" json:"destruct_class"`
+	LocationScore  float64        `gorm:"column:location_score;type:numeric" json:"location_score"`
+	TotalScore     float64        `gorm:"column:total_score;type:numeric" json:"total_score"`
+	Status         string         `gorm:"type:text" json:"status"`
+	CreatedAt      time.Time      `json:"created_at"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+}

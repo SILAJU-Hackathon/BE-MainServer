@@ -29,7 +29,7 @@ func NewAppProvider() AppProvider {
 	servicesProvider := NewServicesProvider(repositoriesProvider, configProvider)
 	controllerProvider := NewControllerProvider(servicesProvider)
 	middlewareProvider := NewMiddlewareProvider(servicesProvider)
-	configProvider.ProvideDatabaseConfig().AutoMigrateAll(&entity.User{})
+	configProvider.ProvideDatabaseConfig().AutoMigrateAll(&entity.User{}, &entity.Report{})
 
 	return &appProvider{
 		ginRouter:            ginRouter,

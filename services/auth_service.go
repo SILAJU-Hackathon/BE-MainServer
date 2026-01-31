@@ -8,6 +8,8 @@ import (
 	entity "dinacom-11.0-backend/models/entity"
 	"dinacom-11.0-backend/repositories"
 	"dinacom-11.0-backend/utils"
+
+	"github.com/google/uuid"
 )
 
 type AuthService interface {
@@ -16,11 +18,14 @@ type AuthService interface {
 	LoginUser(req dto.LoginRequest) (string, error)
 	LoginAdmin(req dto.LoginRequest) (string, error)
 	LoginWorker(req dto.LoginRequest) (string, error)
+	GetProfile(userID uuid.UUID) (*dto.UserResponse, error)
+	GetAllUsers() ([]dto.UserResponse, error)
+	GetAllWorkers() ([]dto.UserResponse, error)
 }
 
 type authService struct {
 	userRepo repositories.UserRepository
-	otpStore map[string]string // Simple in-memory store for OTPs: email -> otp
+	otpStore map[string]string
 	mutex    sync.RWMutex
 }
 
@@ -32,7 +37,6 @@ func NewAuthService(userRepo repositories.UserRepository) AuthService {
 }
 
 func (s *authService) RegisterUser(req dto.RegisterRequest) error {
-	// Check if user exists
 	existingUser, err := s.userRepo.FindUserByEmail(req.Email)
 	if err != nil {
 		return err
@@ -41,13 +45,11 @@ func (s *authService) RegisterUser(req dto.RegisterRequest) error {
 		return errors.New("email already registered")
 	}
 
-	// Hash password
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return err
 	}
 
-	// Create user (verified = false)
 	user := &entity.User{
 		Username: req.Username,
 		Fullname: req.FullName,
@@ -61,14 +63,13 @@ func (s *authService) RegisterUser(req dto.RegisterRequest) error {
 		return err
 	}
 
-	// Generate and Send OTP
 	otp := utils.GenerateOTP()
 
 	s.mutex.Lock()
 	s.otpStore[req.Email] = otp
 	s.mutex.Unlock()
 
-	utils.SendOTP(req.Email, otp) 
+	utils.SendOTP(req.Email, otp)
 
 	return nil
 }
@@ -82,23 +83,19 @@ func (s *authService) VerifyOTP(req dto.VerifyOTPRequest) (string, error) {
 		return "", errors.New("invalid or expired OTP")
 	}
 
-	// Verify user in DB
 	if err := s.userRepo.UpdateUserVerified(req.Email, true); err != nil {
 		return "", err
 	}
 
-	// Get User to generate token
 	user, err := s.userRepo.FindUserByEmail(req.Email)
 	if err != nil {
 		return "", err
 	}
 
-	// Clear OTP
 	s.mutex.Lock()
 	delete(s.otpStore, req.Email)
 	s.mutex.Unlock()
 
-	// Generate Token
 	return utils.GenerateAccessToken(user.ID, user.Role, user.Email)
 }
 
@@ -116,8 +113,6 @@ func (s *authService) LoginUser(req dto.LoginRequest) (string, error) {
 	}
 
 	if !user.Verified {
-		// Prepare new OTP if not verified (optional, but good UX to allow re-verify)
-		// For now, just block
 		return "", errors.New("account not verified. please verify OTP")
 	}
 
@@ -129,11 +124,6 @@ func (s *authService) LoginUser(req dto.LoginRequest) (string, error) {
 }
 
 func (s *authService) LoginAdmin(req dto.LoginRequest) (string, error) {
-	// For admin, we assume they might be pre-seeded or created via different flow.
-	// But validation logic is similar, just role check.
-	// NOTE: If Admin doesn't exist, we can't login.
-	// For testing, user might need to seed an admin.
-
 	user, err := s.userRepo.FindUserByEmail(req.Email)
 	if err != nil {
 		return "", err
@@ -171,4 +161,63 @@ func (s *authService) LoginWorker(req dto.LoginRequest) (string, error) {
 	}
 
 	return utils.GenerateAccessToken(user.ID, user.Role, user.Email)
+}
+
+func (s *authService) GetProfile(userID uuid.UUID) (*dto.UserResponse, error) {
+	user, err := s.userRepo.FindUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
+	return &dto.UserResponse{
+		ID:       user.ID,
+		Username: user.Username,
+		Fullname: user.Fullname,
+		Email:    user.Email,
+		Role:     user.Role,
+		Verified: user.Verified,
+	}, nil
+}
+
+func (s *authService) GetAllUsers() ([]dto.UserResponse, error) {
+	users, err := s.userRepo.GetUsersByRole("user")
+	if err != nil {
+		return nil, err
+	}
+
+	var response []dto.UserResponse
+	for _, user := range users {
+		response = append(response, dto.UserResponse{
+			ID:       user.ID,
+			Username: user.Username,
+			Fullname: user.Fullname,
+			Email:    user.Email,
+			Role:     user.Role,
+			Verified: user.Verified,
+		})
+	}
+	return response, nil
+}
+
+func (s *authService) GetAllWorkers() ([]dto.UserResponse, error) {
+	users, err := s.userRepo.GetUsersByRole("worker")
+	if err != nil {
+		return nil, err
+	}
+
+	var response []dto.UserResponse
+	for _, user := range users {
+		response = append(response, dto.UserResponse{
+			ID:       user.ID,
+			Username: user.Username,
+			Fullname: user.Fullname,
+			Email:    user.Email,
+			Role:     user.Role,
+			Verified: user.Verified,
+		})
+	}
+	return response, nil
 }
