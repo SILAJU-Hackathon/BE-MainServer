@@ -17,10 +17,14 @@ type AchievementService interface {
 
 type achievementService struct {
 	achievementRepo repositories.AchievementRepository
+	rankService     RankService
 }
 
-func NewAchievementService(achievementRepo repositories.AchievementRepository) AchievementService {
-	return &achievementService{achievementRepo: achievementRepo}
+func NewAchievementService(achievementRepo repositories.AchievementRepository, rankService RankService) AchievementService {
+	return &achievementService{
+		achievementRepo: achievementRepo,
+		rankService:     rankService,
+	}
 }
 
 func (s *achievementService) GetUserAchievements(userID uuid.UUID) (*dto.AchievementListResponse, error) {
@@ -55,6 +59,7 @@ func (s *achievementService) GetUserAchievements(userID uuid.UUID) (*dto.Achieve
 			Description: a.Description,
 			BadgeURL:    a.BadgeURL,
 			Category:    a.Category,
+			XPReward:    a.XPReward,
 			Unlocked:    unlocked,
 			UnlockedAt:  unlockedAt,
 		})
@@ -81,6 +86,7 @@ func (s *achievementService) GetUnlockedAchievements(userID uuid.UUID) (*dto.Ach
 			Description: ua.Achievement.Description,
 			BadgeURL:    ua.Achievement.BadgeURL,
 			Category:    ua.Achievement.Category,
+			XPReward:    ua.Achievement.XPReward,
 			Unlocked:    true,
 			UnlockedAt:  ua.UnlockedAt.Format(time.RFC3339),
 		})
@@ -96,22 +102,31 @@ func (s *achievementService) GetUnlockedAchievements(userID uuid.UUID) (*dto.Ach
 func (s *achievementService) CheckAndUnlockAchievements(userID uuid.UUID) ([]dto.NewAchievementResponse, error) {
 	var newAchievements []dto.NewAchievementResponse
 
-	// Get all achievements for badge info
+	// Get all achievements for badge info and XP
 	allAchievements, _ := s.achievementRepo.GetAllAchievements()
-	achievementMap := make(map[string]struct{ Name, Description, BadgeURL string })
+	achievementMap := make(map[string]struct {
+		Name, Description, BadgeURL string
+		XPReward                    int
+	})
 	for _, a := range allAchievements {
-		achievementMap[a.ID] = struct{ Name, Description, BadgeURL string }{a.Name, a.Description, a.BadgeURL}
+		achievementMap[a.ID] = struct {
+			Name, Description, BadgeURL string
+			XPReward                    int
+		}{a.Name, a.Description, a.BadgeURL, a.XPReward}
 	}
 
-	// Helper function
+	// Helper function to unlock achievement and award XP
 	unlock := func(achievementID string) {
 		if err := s.achievementRepo.UnlockAchievement(userID, achievementID); err == nil {
 			if info, ok := achievementMap[achievementID]; ok {
+				// Award XP when achievement is unlocked
+				s.rankService.AddXPToUser(userID, info.XPReward)
 				newAchievements = append(newAchievements, dto.NewAchievementResponse{
 					AchievementID: achievementID,
 					Name:          info.Name,
 					Description:   info.Description,
 					BadgeURL:      info.BadgeURL,
+					XPReward:      info.XPReward,
 				})
 			}
 		}

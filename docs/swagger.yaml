@@ -1,4 +1,34 @@
 definitions:
+  dto.AchievementListResponse:
+    properties:
+      achievements:
+        items:
+          $ref: '#/definitions/dto.AchievementResponse'
+        type: array
+      total_count:
+        type: integer
+      unlocked_count:
+        type: integer
+    type: object
+  dto.AchievementResponse:
+    properties:
+      badge_url:
+        type: string
+      category:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      unlocked:
+        type: boolean
+      unlocked_at:
+        type: string
+      xp_reward:
+        type: integer
+    type: object
   dto.AssignWorkerRequest:
     properties:
       admin_notes:
@@ -99,6 +129,19 @@ definitions:
     - email
     - password
     type: object
+  dto.NewAchievementResponse:
+    properties:
+      achievement_id:
+        type: string
+      badge_url:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      xp_reward:
+        type: integer
+    type: object
   dto.PaginatedReportsResponse:
     properties:
       limit:
@@ -190,6 +233,25 @@ definitions:
         type: number
       user_id:
         type: string
+    type: object
+  dto.UserRankResponse:
+    properties:
+      current_xp:
+        type: integer
+      level:
+        type: integer
+      next_level:
+        type: integer
+      progress:
+        type: number
+      rank:
+        type: integer
+      rank_name:
+        type: string
+      total_xp:
+        type: integer
+      xp_to_next:
+        type: integer
     type: object
   dto.UserReportResponse:
     properties:
@@ -674,6 +736,92 @@ paths:
       summary: Get Reports
       tags:
       - Report
+  /api/user/achievements:
+    get:
+      description: Get all achievements with unlock status for the logged-in user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AchievementListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get All Achievements
+      tags:
+      - Achievements
+  /api/user/achievements/check:
+    post:
+      description: Trigger achievement check and unlock any new achievements
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.NewAchievementResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Check Achievements
+      tags:
+      - Achievements
+  /api/user/achievements/unlocked:
+    get:
+      description: Get only unlocked achievements for the logged-in user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AchievementListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Unlocked Achievements
+      tags:
+      - Achievements
+  /api/user/rank:
+    get:
+      description: Get the logged-in user's rank, level, XP progress
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserRankResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get User Rank
+      tags:
+      - User
   /api/user/report:
     post:
       consumes:

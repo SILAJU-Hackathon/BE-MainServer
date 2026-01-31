@@ -6,6 +6,7 @@ type AchievementResponse struct {
 	Description string `json:"description"`
 	BadgeURL    string `json:"badge_url"`
 	Category    string `json:"category"`
+	XPReward    int    `json:"xp_reward"`
 	Unlocked    bool   `json:"unlocked"`
 	UnlockedAt  string `json:"unlocked_at,omitempty"`
 }
@@ -21,4 +22,5 @@ type NewAchievementResponse struct {
 	Name          string `json:"name"`
 	Description   string `json:"description"`
 	BadgeURL      string `json:"badge_url"`
+	XPReward      int    `json:"xp_reward"`
 }

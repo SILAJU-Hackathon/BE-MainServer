@@ -13,16 +13,26 @@ type AchievementRouter interface {
 
 type achievementRouter struct {
 	achievementController controllers.AchievementController
+	rankController        controllers.RankController
 }
 
-func NewAchievementRouter(achievementController controllers.AchievementController) AchievementRouter {
-	return &achievementRouter{achievementController: achievementController}
+func NewAchievementRouter(achievementController controllers.AchievementController, rankController controllers.RankController) AchievementRouter {
+	return &achievementRouter{
+		achievementController: achievementController,
+		rankController:        rankController,
+	}
 }
 
 func (r *achievementRouter) Setup(router *gin.RouterGroup) {
-	achievementGroup := router.Group("/user/achievements")
-	achievementGroup.Use(middleware.AuthMiddleware())
+	userGroup := router.Group("/user")
+	userGroup.Use(middleware.AuthMiddleware())
+
+	// Achievement routes
+	achievementGroup := userGroup.Group("/achievements")
 	achievementGroup.GET("", r.achievementController.GetUserAchievements)
 	achievementGroup.GET("/unlocked", r.achievementController.GetUnlockedAchievements)
 	achievementGroup.POST("/check", r.achievementController.CheckAchievements)
+
+	// Rank route
+	userGroup.GET("/rank", r.rankController.GetUserRank)
 }

@@ -44,14 +44,16 @@ type reportService struct {
 	reportRepo       repositories.ReportRepository
 	userRepo         repositories.UserRepository
 	cloudinaryClient *utils.CloudinaryClient
+	rankService      RankService
 }
 
-func NewReportService(reportRepo repositories.ReportRepository, userRepo repositories.UserRepository) ReportService {
+func NewReportService(reportRepo repositories.ReportRepository, userRepo repositories.UserRepository, rankService RankService) ReportService {
 	client, _ := utils.NewCloudinaryClient()
 	return &reportService{
 		reportRepo:       reportRepo,
 		userRepo:         userRepo,
 		cloudinaryClient: client,
+		rankService:      rankService,
 	}
 }
 
@@ -250,7 +252,15 @@ func (s *reportService) VerifyReport(reportID string) error {
 		return http_error.ONLY_FINISH_BY_WORKER_VERIFY
 	}
 
-	return s.reportRepo.UpdateStatus(reportID, entity.STATUS_VERIFIED)
+	if err := s.reportRepo.UpdateStatus(reportID, entity.STATUS_VERIFIED); err != nil {
+		return err
+	}
+
+	// Award XP for verified report (50 XP)
+	// We ignore error here as it shouldn't block the verification process
+	s.rankService.AddXPToUser(report.UserID, 50)
+
+	return nil
 }
 
 func (s *reportService) buildPaginatedResponse(reports []entity.Report, total int64, page, limit int) *dto.PaginatedReportsResponse {

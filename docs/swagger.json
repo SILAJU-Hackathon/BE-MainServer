@@ -652,6 +652,145 @@
                 }
             }
         },
+        "/api/user/achievements": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all achievements with unlock status for the logged-in user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Achievements"
+                ],
+                "summary": "Get All Achievements",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AchievementListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/achievements/check": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Trigger achievement check and unlock any new achievements",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Achievements"
+                ],
+                "summary": "Check Achievements",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.NewAchievementResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/achievements/unlocked": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get only unlocked achievements for the logged-in user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Achievements"
+                ],
+                "summary": "Get Unlocked Achievements",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AchievementListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/rank": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the logged-in user's rank, level, XP progress",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User Rank",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserRankResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/user/report": {
             "post": {
                 "security": [
@@ -1026,6 +1165,52 @@
         }
     },
     "definitions": {
+        "dto.AchievementListResponse": {
+            "type": "object",
+            "properties": {
+                "achievements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AchievementResponse"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "unlocked_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.AchievementResponse": {
+            "type": "object",
+            "properties": {
+                "badge_url": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "unlocked": {
+                    "type": "boolean"
+                },
+                "unlocked_at": {
+                    "type": "string"
+                },
+                "xp_reward": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.AssignWorkerRequest": {
             "type": "object",
             "required": [
@@ -1179,6 +1364,26 @@
                 }
             }
         },
+        "dto.NewAchievementResponse": {
+            "type": "object",
+            "properties": {
+                "achievement_id": {
+                    "type": "string"
+                },
+                "badge_url": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "xp_reward": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.PaginatedReportsResponse": {
             "type": "object",
             "properties": {
@@ -1315,6 +1520,35 @@
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.UserRankResponse": {
+            "type": "object",
+            "properties": {
+                "current_xp": {
+                    "type": "integer"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "next_level": {
+                    "type": "integer"
+                },
+                "progress": {
+                    "type": "number"
+                },
+                "rank": {
+                    "type": "integer"
+                },
+                "rank_name": {
+                    "type": "string"
+                },
+                "total_xp": {
+                    "type": "integer"
+                },
+                "xp_to_next": {
+                    "type": "integer"
                 }
             }
         },
