@@ -35,4 +35,5 @@ func (r *achievementRouter) Setup(router *gin.RouterGroup) {
 
 	// Rank route
 	userGroup.GET("/rank", r.rankController.GetUserRank)
+	userGroup.GET("/leaderboard", r.rankController.GetLeaderboard)
 }

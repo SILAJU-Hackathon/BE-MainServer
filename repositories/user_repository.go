@@ -15,6 +15,7 @@ type UserRepository interface {
 	FindUserByID(id uuid.UUID) (*entity.User, error)
 	UpdateUserVerified(email string, verified bool) error
 	UpdateUser(user *entity.User) error
+	GetTopUsersByXP(limit int) ([]entity.User, error)
 	GetAllUsers() ([]entity.User, error)
 	GetUsersByRole(role string) ([]entity.User, error)
 }
@@ -73,4 +74,10 @@ func (r *userRepository) GetUsersByRole(role string) ([]entity.User, error) {
 
 func (r *userRepository) UpdateUser(user *entity.User) error {
 	return r.db.Save(user).Error
+}
+
+func (r *userRepository) GetTopUsersByXP(limit int) ([]entity.User, error) {
+	var users []entity.User
+	err := r.db.Order("total_xp DESC").Limit(limit).Find(&users).Error
+	return users, err
 }

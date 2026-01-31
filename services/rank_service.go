@@ -33,6 +33,7 @@ type RankService interface {
 	CalculateLevel(totalXP int) int
 	GetXPForLevel(level int) int
 	GetCumulativeXPForLevel(level int) int
+	GetLeaderboard(limit int) ([]dto.LeaderboardEntry, error)
 }
 
 type rankService struct {
@@ -151,4 +152,27 @@ func (s *rankService) AddXPToUser(userID uuid.UUID, xp int) (*dto.LevelUpRespons
 	}
 
 	return response, nil
+}
+
+func (s *rankService) GetLeaderboard(limit int) ([]dto.LeaderboardEntry, error) {
+	users, err := s.userRepo.GetTopUsersByXP(limit)
+	if err != nil {
+		return nil, err
+	}
+
+	var leaderboard []dto.LeaderboardEntry
+	for i, user := range users {
+		_, rankName := s.getRank(user.Level)
+
+		leaderboard = append(leaderboard, dto.LeaderboardEntry{
+			Rank:     i + 1,
+			UserID:   user.ID.String(),
+			Fullname: user.Fullname,
+			TotalXP:  user.TotalXP,
+			Level:    user.Level,
+			RankName: rankName,
+		})
+	}
+
+	return leaderboard, nil
 }

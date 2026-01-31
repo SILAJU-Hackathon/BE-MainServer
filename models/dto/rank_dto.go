@@ -19,3 +19,12 @@ type LevelUpResponse struct {
 	RankChanged bool   `json:"rank_changed"`
 	NewRankName string `json:"new_rank_name,omitempty"`
 }
+
+type LeaderboardEntry struct {
+	Rank     int    `json:"rank"`
+	UserID   string `json:"user_id"`
+	Fullname string `json:"fullname"`
+	TotalXP  int    `json:"total_xp"`
+	Level    int    `json:"level"`
+	RankName string `json:"rank_name"`
+}
