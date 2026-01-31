@@ -7,7 +7,6 @@ sdk: docker
 pinned: false
 ---
 
-
 # SILAJU Backend - Feature Review
 
 Backend API untuk aplikasi pelaporan kondisi jalan dengan sistem manajemen worker dan admin.
@@ -57,6 +56,30 @@ Backend API untuk aplikasi pelaporan kondisi jalan dengan sistem manajemen worke
 
 ---
 
+## 👷 Worker Management API (Admin Only)
+
+| Method   | Endpoint                 | Deskripsi                  |
+| -------- | ------------------------ | -------------------------- |
+| `POST`   | `/api/admin/worker`      | Create new worker          |
+| `GET`    | `/api/admin/worker`      | Get all workers            |
+| `GET`    | `/api/admin/worker/:id`  | Get worker by ID           |
+| `PUT`    | `/api/admin/worker/:id`  | Update worker              |
+| `DELETE` | `/api/admin/worker/:id`  | Delete worker              |
+| `POST`   | `/api/auth/admin/assign` | Assign worker role to user |
+
+### Create Worker Request
+
+```json
+{
+  "fullname": "John Doe",
+  "username": "johndoe",
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+
+---
+
 ## 📝 Report API
 
 ### Public Endpoints
@@ -67,10 +90,21 @@ Backend API untuk aplikasi pelaporan kondisi jalan dengan sistem manajemen worke
 
 ### User Endpoints
 
-| Method | Endpoint              | Deskripsi                                                |
-| ------ | --------------------- | -------------------------------------------------------- |
-| `POST` | `/api/user/report`    | Membuat laporan baru (multipart/form-data dengan gambar) |
-| `GET`  | `/api/user/report/me` | Mendapatkan semua laporan user (pagination)              |
+| Method | Endpoint                 | Deskripsi                                                |
+| ------ | ------------------------ | -------------------------------------------------------- |
+| `POST` | `/api/user/report`       | Membuat laporan baru (multipart/form-data dengan gambar) |
+| `GET`  | `/api/user/report/me`    | Mendapatkan semua laporan user (pagination)              |
+| `GET`  | `/api/user/report/stats` | Mendapatkan statistik laporan user                       |
+
+### User Report Stats Response
+
+```json
+{
+  "total": 12,
+  "verified": 8,
+  "in_progress": 2
+}
+```
 
 ### Worker Endpoints
 
@@ -84,9 +118,72 @@ Backend API untuk aplikasi pelaporan kondisi jalan dengan sistem manajemen worke
 
 | Method  | Endpoint                   | Deskripsi                                       |
 | ------- | -------------------------- | ----------------------------------------------- |
+| `GET`   | `/api/admin/report`        | Mendapatkan semua laporan (pagination, filter)  |
+| `GET`   | `/api/admin/report/detail` | Mendapatkan detail lengkap laporan              |
 | `PATCH` | `/api/admin/report/assign` | Assign worker ke laporan                        |
 | `GET`   | `/api/admin/report/assign` | Mendapatkan semua laporan yang sudah di-assign  |
 | `PATCH` | `/api/admin/report/verify` | Verifikasi laporan yang sudah dikerjakan worker |
+
+---
+
+## 🏆 Achievement & Rank System
+
+### Rank Endpoints
+
+| Method | Endpoint                | Role | Deskripsi                         |
+| ------ | ----------------------- | ---- | --------------------------------- |
+| `GET`  | `/api/user/rank`        | User | Mendapatkan rank dan XP user      |
+| `GET`  | `/api/user/leaderboard` | All  | Mendapatkan leaderboard top users |
+
+### Achievement Endpoints
+
+| Method | Endpoint                 | Role | Deskripsi                     |
+| ------ | ------------------------ | ---- | ----------------------------- |
+| `GET`  | `/api/user/achievements` | User | Mendapatkan achievements user |
+
+### Rank Response
+
+```json
+{
+  "total_xp": 150,
+  "level": 3,
+  "rank_name": "Silver Reporter",
+  "next_rank_name": "Gold Reporter",
+  "xp_to_next_rank": 100
+}
+```
+
+### Leaderboard Response
+
+```json
+[
+  {
+    "rank": 1,
+    "user_id": "uuid",
+    "username": "top_user",
+    "fullname": "Top User",
+    "total_xp": 500,
+    "level": 5,
+    "rank_name": "Diamond Reporter"
+  }
+]
+```
+
+### XP System
+
+- User mendapatkan XP ketika laporan diverifikasi admin
+- XP dihitung berdasarkan `total_score` laporan
+- Level naik setiap 100 XP
+
+### Rank Tiers
+
+| Level | Rank Name         |
+| ----- | ----------------- |
+| 1     | Bronze Reporter   |
+| 2     | Silver Reporter   |
+| 3     | Gold Reporter     |
+| 4     | Platinum Reporter |
+| 5+    | Diamond Reporter  |
 
 ---
 
@@ -97,7 +194,7 @@ Backend API untuk aplikasi pelaporan kondisi jalan dengan sistem manajemen worke
 │                        REPORT LIFECYCLE                         │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  1. USER creates report          →  Status: "complete"          │
+│  1. USER creates report          →  Status: "complete"         │
 │                                                                 │
 │  2. ADMIN assigns worker         →  Status: "assigned"         │
 │     (+ admin_notes, deadline)                                   │
@@ -105,7 +202,8 @@ Backend API untuk aplikasi pelaporan kondisi jalan dengan sistem manajemen worke
 │  3. WORKER completes task        →  Status: "finish by worker" │
 │     (+ uploads after image)                                     │
 │                                                                 │
-│  4. ADMIN verifies completion    →  Status: "finished"         │
+│  4. ADMIN verifies completion    →  Status: "verified"         │
+│     (+ XP awarded to user)                                      │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -125,6 +223,8 @@ Backend API untuk aplikasi pelaporan kondisi jalan dengan sistem manajemen worke
 | `role`     | VARCHAR(20)  | user/admin/worker     |
 | `password` | VARCHAR(255) | Hashed password       |
 | `verified` | BOOLEAN      | Status verifikasi OTP |
+| `total_xp` | INT          | Total XP user         |
+| `level`    | INT          | Level user            |
 
 ### Report Entity
 
@@ -145,6 +245,17 @@ Backend API untuk aplikasi pelaporan kondisi jalan dengan sistem manajemen worke
 | `status`           | TEXT      | Status laporan                                |
 | `admin_notes`      | TEXT      | Catatan dari admin                            |
 | `deadline`         | TIMESTAMP | Batas waktu pengerjaan                        |
+
+### Achievement Entity
+
+| Field         | Type         | Deskripsi             |
+| ------------- | ------------ | --------------------- |
+| `id`          | TEXT         | Primary key           |
+| `name`        | VARCHAR(100) | Nama achievement      |
+| `description` | TEXT         | Deskripsi achievement |
+| `badge_url`   | TEXT         | URL badge image       |
+| `category`    | VARCHAR(50)  | Kategori              |
+| `xp_reward`   | INT          | XP reward             |
 
 ---
 
@@ -214,5 +325,3 @@ Swagger UI tersedia di: `http://localhost:8080/swagger/index.html`
 - Password Hashing (bcrypt)
 - OTP Email Verification
 - Google OAuth Integration
-- Gzip Compression
-

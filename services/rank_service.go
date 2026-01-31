@@ -15,16 +15,16 @@ const (
 	MAX_LEVEL     = 10
 )
 
-// Rank definitions (fun Indonesian names)
+// Rank definitions
 var ranks = []struct {
 	MinLevel int
 	Name     string
 }{
-	{1, "Pejalan Kaki"},
-	{3, "Pesepeda Santai"},
-	{5, "Rider Jalanan"},
-	{7, "Navigator Pro"},
-	{9, "Legenda Jalanan"},
+	{1, "Bronze Reporter"},
+	{3, "Silver Reporter"},
+	{5, "Gold Reporter"},
+	{7, "Platinum Reporter"},
+	{9, "Diamond Reporter"},
 }
 
 type RankService interface {
