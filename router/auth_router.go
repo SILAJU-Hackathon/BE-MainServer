@@ -44,6 +44,7 @@ func (r *authRouter) Setup(router *gin.RouterGroup) {
 	adminProtected.Use(middleware.RoleMiddleware("admin"))
 	adminProtected.GET("/users", r.authController.GetAllUsers)
 	adminProtected.GET("/workers", r.authController.GetAllWorkers)
+	adminProtected.POST("/assign", r.authController.AssignWorkerRole)
 
 	workerProtected := authGroup.Group("/worker")
 	workerProtected.Use(middleware.AuthMiddleware())

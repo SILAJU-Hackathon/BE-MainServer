@@ -22,6 +22,7 @@ type AuthService interface {
 	GetProfile(userID uuid.UUID) (*dto.UserResponse, error)
 	GetAllUsers() ([]dto.UserResponse, error)
 	GetAllWorkers() ([]dto.UserResponse, error)
+	AssignWorkerRole(userID uuid.UUID) error
 }
 
 type authService struct {
@@ -261,4 +262,17 @@ func (s *authService) GoogleAuth(req dto.GoogleAuthRequest) (*dto.GoogleAuthResp
 			IsNewUser: isNewUser,
 		},
 	}, nil
+}
+
+func (s *authService) AssignWorkerRole(userID uuid.UUID) error {
+	user, err := s.userRepo.FindUserByID(userID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return errors.New("user not found")
+	}
+
+	user.Role = entity.ROLE_WORKER
+	return s.userRepo.UpdateUser(user)
 }

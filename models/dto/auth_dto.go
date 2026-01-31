@@ -31,3 +31,7 @@ type UserResponse struct {
 	Role     string    `json:"role"`
 	Verified bool      `json:"verified"`
 }
+
+type AssignWorkerRoleRequest struct {
+	WorkerID uuid.UUID `json:"worker_id" binding:"required"`
+}

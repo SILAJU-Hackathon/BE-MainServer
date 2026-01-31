@@ -27,6 +27,7 @@ func (r *reportRouter) Setup(router *gin.RouterGroup) {
 	userReportGroup.Use(middleware.AuthMiddleware())
 	userReportGroup.POST("", r.reportController.CreateReport)
 	userReportGroup.GET("/me", r.reportController.GetUserReports)
+	userReportGroup.GET("/stats", r.reportController.GetUserReportStats)
 
 	adminGroup := router.Group("/admin/report")
 	adminGroup.Use(middleware.AuthMiddleware())

@@ -21,6 +21,7 @@ type AuthController interface {
 	GetProfile(ctx *gin.Context)
 	GetAllUsers(ctx *gin.Context)
 	GetAllWorkers(ctx *gin.Context)
+	AssignWorkerRole(ctx *gin.Context)
 }
 
 type authController struct {
@@ -239,4 +240,30 @@ func (c *authController) GoogleAuth(ctx *gin.Context) {
 	}
 
 	utils.SendSuccessResponse(ctx, "Authentication successful", response)
+}
+
+// @Summary Assign Worker Role
+// @Description Assign worker role to a user (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body dto.AssignWorkerRoleRequest true "Assign Worker Role Request"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Router /api/admin/auth/assign [post]
+func (c *authController) AssignWorkerRole(ctx *gin.Context) {
+	var req dto.AssignWorkerRoleRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := c.authService.AssignWorkerRole(req.WorkerID); err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Worker role assigned successfully", nil)
 }

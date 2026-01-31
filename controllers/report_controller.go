@@ -27,6 +27,7 @@ type ReportController interface {
 	GetReportImage(ctx *gin.Context)
 	GetAllReportsAdmin(ctx *gin.Context)
 	GetFullReportDetail(ctx *gin.Context)
+	GetUserReportStats(ctx *gin.Context)
 }
 
 type reportController struct {
@@ -446,4 +447,29 @@ func (c *reportController) GetFullReportDetail(ctx *gin.Context) {
 	}
 
 	utils.SendSuccessResponse(ctx, "Report detail retrieved", response)
+}
+
+// @Summary Get User Report Stats
+// @Description Get report statistics for the authenticated user
+// @Tags User
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.UserReportStatsResponse
+// @Failure 401 {object} map[string]string
+// @Router /api/user/report/stats [get]
+func (c *reportController) GetUserReportStats(ctx *gin.Context) {
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		utils.SendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	userID := userIDVal.(uuid.UUID)
+	stats, err := c.reportService.GetUserReportStats(userID)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Report stats retrieved", stats)
 }

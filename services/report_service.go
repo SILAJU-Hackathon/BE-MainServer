@@ -38,6 +38,7 @@ type ReportService interface {
 	GetReportImage(workerID uuid.UUID, reportID string) (*dto.ReportImageResponse, error)
 	GetAllReportsAdmin(status string, page, limit int) (*dto.PaginatedReportsResponse, error)
 	GetFullReportDetail(reportID string) (*dto.FullReportDetailResponse, error)
+	GetUserReportStats(userID uuid.UUID) (*dto.UserReportStatsResponse, error)
 }
 
 type reportService struct {
@@ -372,5 +373,18 @@ func (s *reportService) GetFullReportDetail(reportID string) (*dto.FullReportDet
 		AdminNotes:     report.AdminNotes,
 		Deadline:       report.Deadline,
 		CreatedAt:      report.CreatedAt,
+	}, nil
+}
+
+func (s *reportService) GetUserReportStats(userID uuid.UUID) (*dto.UserReportStatsResponse, error) {
+	total, verified, inProgress, err := s.reportRepo.GetUserReportStats(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.UserReportStatsResponse{
+		Total:      total,
+		Verified:   verified,
+		InProgress: inProgress,
 	}, nil
 }
