@@ -14,7 +14,7 @@ type servicesProvider struct {
 
 func NewServicesProvider(repoProvider RepositoriesProvider, configProvider ConfigProvider) ServicesProvider {
 	authService := services.NewAuthService(repoProvider.ProvideUserRepository())
-	reportService := services.NewReportService(repoProvider.ProvideReportRepository())
+	reportService := services.NewReportService(repoProvider.ProvideReportRepository(), repoProvider.ProvideUserRepository())
 	return &servicesProvider{
 		authService:   authService,
 		reportService: reportService,

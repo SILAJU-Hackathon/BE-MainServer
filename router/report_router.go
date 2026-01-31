@@ -20,7 +20,20 @@ func NewReportRouter(reportController controllers.ReportController) ReportRouter
 }
 
 func (r *reportRouter) Setup(router *gin.RouterGroup) {
+	router.GET("/get_report", r.reportController.GetReports)
+
 	reportGroup := router.Group("/user/report")
 	reportGroup.Use(middleware.AuthMiddleware())
 	reportGroup.POST("", r.reportController.CreateReport)
+
+	adminGroup := router.Group("/admin/report")
+	adminGroup.Use(middleware.AuthMiddleware())
+	adminGroup.Use(middleware.RoleMiddleware("admin"))
+	adminGroup.PATCH("/assign", r.reportController.AssignWorker)
+	adminGroup.GET("/assign", r.reportController.GetAssignedReports)
+
+	workerGroup := router.Group("/worker")
+	workerGroup.Use(middleware.AuthMiddleware())
+	workerGroup.Use(middleware.RoleMiddleware("worker", "admin"))
+	workerGroup.PATCH("/report", r.reportController.FinishReport)
 }

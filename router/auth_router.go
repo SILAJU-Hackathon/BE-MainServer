@@ -4,7 +4,6 @@ import (
 	"dinacom-11.0-backend/controllers"
 	"dinacom-11.0-backend/middleware"
 
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +21,6 @@ func NewAuthRouter(authController controllers.AuthController) AuthRouter {
 
 func (r *authRouter) Setup(router *gin.RouterGroup) {
 	authGroup := router.Group("/auth")
-	authGroup.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	userGroup := authGroup.Group("/user")
 	userGroup.POST("/register", r.authController.RegisterUser)

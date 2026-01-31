@@ -23,6 +23,7 @@ type User struct {
 type Report struct {
 	ID             string         `gorm:"type:text;primary_key" json:"id"`
 	UserID         uuid.UUID      `gorm:"type:uuid" json:"user_id"`
+	WorkerID       *uuid.UUID     `gorm:"type:uuid" json:"worker_id"`
 	Longitude      float64        `gorm:"type:numeric" json:"longitude"`
 	Latitude       float64        `gorm:"type:numeric" json:"latitude"`
 	RoadName       string         `gorm:"column:road_name;type:text" json:"road_name"`
@@ -33,6 +34,8 @@ type Report struct {
 	LocationScore  float64        `gorm:"column:location_score;type:numeric" json:"location_score"`
 	TotalScore     float64        `gorm:"column:total_score;type:numeric" json:"total_score"`
 	Status         string         `gorm:"type:text" json:"status"`
+	AdminNotes     string         `gorm:"column:admin_notes;type:text" json:"admin_notes"`
+	Deadline       *time.Time     `gorm:"column:deadline;type:timestamp" json:"deadline"`
 	CreatedAt      time.Time      `json:"created_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
