@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"dinacom-11.0-backend/models/dto"
 	"dinacom-11.0-backend/services"
@@ -18,6 +19,10 @@ type ReportController interface {
 	AssignWorker(ctx *gin.Context)
 	GetAssignedReports(ctx *gin.Context)
 	FinishReport(ctx *gin.Context)
+	GetUserReports(ctx *gin.Context)
+	GetWorkerAssignedReports(ctx *gin.Context)
+	GetWorkerHistory(ctx *gin.Context)
+	VerifyReport(ctx *gin.Context)
 }
 
 type reportController struct {
@@ -34,7 +39,7 @@ func NewReportController(reportService services.ReportService) ReportController 
 // @Accept multipart/form-data
 // @Produce json
 // @Param files formData file true "Image file (JPG, PNG, JPEG, max 32MB)"
-// @Param json formData string true "JSON data: {\"longitude\": 0, \"latitude\": 0, \"road_name\": \"string\", \"description\": \"string\"}"
+// @Param json formData string true "JSON data" default({"longitude": 106.816666, "latitude": -6.200000, "road_name": "Jalan Sudirman", "description": "Lubang besar di tengah jalan"})
 // @Security BearerAuth
 // @Success 200 {object} dto.ReportResponse
 // @Failure 400 {object} map[string]string
@@ -142,7 +147,7 @@ func (c *reportController) GetAssignedReports(ctx *gin.Context) {
 // @Accept multipart/form-data
 // @Produce json
 // @Param files formData file true "After image file"
-// @Param json formData string true "JSON data: {\"report_id\": \"string\"}"
+// @Param json formData string true "JSON data" default({"report_id": "uuid-here"})
 // @Security BearerAuth
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
@@ -180,4 +185,139 @@ func (c *reportController) FinishReport(ctx *gin.Context) {
 	}
 
 	utils.SendSuccessResponse(ctx, "Report finished successfully", nil)
+}
+
+// @Summary Get User's Reports
+// @Description Get all reports created by the logged-in user with pagination
+// @Tags User
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Security BearerAuth
+// @Success 200 {object} dto.PaginatedReportsResponse
+// @Failure 401 {object} map[string]string
+// @Router /api/user/report/me [get]
+func (c *reportController) GetUserReports(ctx *gin.Context) {
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		utils.SendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	response, err := c.reportService.GetUserReports(userID, page, limit)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "User reports retrieved", response)
+}
+
+// @Summary Get Worker's Assigned Reports
+// @Description Get all reports assigned to the logged-in worker with pagination
+// @Tags Worker
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Security BearerAuth
+// @Success 200 {object} dto.PaginatedReportsResponse
+// @Failure 401 {object} map[string]string
+// @Router /api/worker/report/assign/me [get]
+func (c *reportController) GetWorkerAssignedReports(ctx *gin.Context) {
+	workerIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		utils.SendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	workerID := workerIDVal.(uuid.UUID)
+
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	response, err := c.reportService.GetWorkerAssignedReports(workerID, page, limit)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Worker assigned reports retrieved", response)
+}
+
+// @Summary Get Worker's History
+// @Description Get worker's completed reports with pagination and status filter
+// @Tags Worker
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Param verify_admin query bool false "True: finished, False: Finish by Worker" default(false)
+// @Security BearerAuth
+// @Success 200 {object} dto.PaginatedReportsResponse
+// @Failure 401 {object} map[string]string
+// @Router /api/worker/report/history/me [get]
+func (c *reportController) GetWorkerHistory(ctx *gin.Context) {
+	workerIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		utils.SendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	workerID := workerIDVal.(uuid.UUID)
+
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+	verifyAdmin := ctx.DefaultQuery("verify_admin", "false") == "true"
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	response, err := c.reportService.GetWorkerHistory(workerID, verifyAdmin, page, limit)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Worker history retrieved", response)
+}
+
+// @Summary Verify Report by Admin
+// @Description Admin verifies a report with status 'Finish by Worker' to 'finished'
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param request body dto.VerifyReportRequest true "Verify Report Request"
+// @Security BearerAuth
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /api/admin/report/verify [patch]
+func (c *reportController) VerifyReport(ctx *gin.Context) {
+	var req dto.VerifyReportRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := c.reportService.VerifyReport(req.ReportID); err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Report verified successfully", nil)
 }

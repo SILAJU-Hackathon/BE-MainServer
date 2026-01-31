@@ -65,6 +65,21 @@ definitions:
     - email
     - password
     type: object
+  dto.PaginatedReportsResponse:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      reports:
+        items:
+          $ref: '#/definitions/dto.UserReportResponse'
+        type: array
+      total_count:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
   dto.RegisterRequest:
     properties:
       email:
@@ -122,6 +137,37 @@ definitions:
       user_id:
         type: string
     type: object
+  dto.UserReportResponse:
+    properties:
+      admin_notes:
+        type: string
+      after_image_url:
+        type: string
+      before_image_url:
+        type: string
+      created_at:
+        type: string
+      deadline:
+        type: string
+      description:
+        type: string
+      destruct_class:
+        type: string
+      id:
+        type: string
+      latitude:
+        type: number
+      location_score:
+        type: number
+      longitude:
+        type: number
+      road_name:
+        type: string
+      status:
+        type: string
+      total_score:
+        type: number
+    type: object
   dto.UserResponse:
     properties:
       email:
@@ -146,6 +192,13 @@ definitions:
     required:
     - email
     - otp
+    type: object
+  dto.VerifyReportRequest:
+    properties:
+      report_id:
+        type: string
+    required:
+    - report_id
     type: object
 host: localhost:8080
 info:
@@ -212,6 +265,38 @@ paths:
       security:
       - BearerAuth: []
       summary: Assign Worker to Report
+      tags:
+      - Admin
+  /api/admin/report/verify:
+    patch:
+      consumes:
+      - application/json
+      description: Admin verifies a report with status 'Finish by Worker' to 'finished'
+      parameters:
+      - description: Verify Report Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VerifyReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Verify Report by Admin
       tags:
       - Admin
   /api/auth/admin/login:
@@ -483,7 +568,9 @@ paths:
         name: files
         required: true
         type: file
-      - description: 'JSON data: {\'
+      - default: '{"longitude": 106.816666, "latitude": -6.200000, "road_name": "Jalan
+          Sudirman", "description": "Lubang besar di tengah jalan"}'
+        description: JSON data
         in: formData
         name: json
         required: true
@@ -506,6 +593,38 @@ paths:
       summary: Create Report
       tags:
       - Report
+  /api/user/report/me:
+    get:
+      description: Get all reports created by the logged-in user with pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PaginatedReportsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get User's Reports
+      tags:
+      - User
   /api/worker/report:
     patch:
       consumes:
@@ -517,7 +636,8 @@ paths:
         name: files
         required: true
         type: file
-      - description: 'JSON data: {\'
+      - default: '{"report_id": "uuid-here"}'
+        description: JSON data
         in: formData
         name: json
         required: true
@@ -540,6 +660,75 @@ paths:
       security:
       - BearerAuth: []
       summary: Finish Report by Worker
+      tags:
+      - Worker
+  /api/worker/report/assign/me:
+    get:
+      description: Get all reports assigned to the logged-in worker with pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PaginatedReportsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Worker's Assigned Reports
+      tags:
+      - Worker
+  /api/worker/report/history/me:
+    get:
+      description: Get worker's completed reports with pagination and status filter
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - default: false
+        description: 'True: finished, False: Finish by Worker'
+        in: query
+        name: verify_admin
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PaginatedReportsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Worker's History
       tags:
       - Worker
 securityDefinitions:

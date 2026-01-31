@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"mime/multipart"
 	"path/filepath"
@@ -31,6 +30,10 @@ type ReportService interface {
 	AssignWorker(req dto.AssignWorkerRequest) (string, error)
 	GetAssignedReports() ([]dto.AssignedWorkerResponse, error)
 	FinishReport(workerID uuid.UUID, file multipart.File, header *multipart.FileHeader, reportID string) error
+	GetUserReports(userID uuid.UUID, page, limit int) (*dto.PaginatedReportsResponse, error)
+	GetWorkerAssignedReports(workerID uuid.UUID, page, limit int) (*dto.PaginatedReportsResponse, error)
+	GetWorkerHistory(workerID uuid.UUID, verifyAdmin bool, page, limit int) (*dto.PaginatedReportsResponse, error)
+	VerifyReport(reportID string) error
 }
 
 type reportService struct {
@@ -73,7 +76,7 @@ func (s *reportService) CreateReport(userID uuid.UUID, file multipart.File, head
 		RoadName:       req.RoadName,
 		BeforeImageURL: imageURL,
 		Description:    req.Description,
-		Status:         "pending",
+		Status:         entity.STATUS_PENDING,
 	}
 
 	if err := s.reportRepo.CreateReport(report); err != nil {
@@ -119,20 +122,20 @@ func (s *reportService) GetReports() ([]dto.ReportLocationResponse, error) {
 func (s *reportService) AssignWorker(req dto.AssignWorkerRequest) (string, error) {
 	report, err := s.reportRepo.GetReportByID(req.ReportID)
 	if err != nil {
-		return "", errors.New("report not found")
+		return "", http_error.REPORT_NOT_FOUND
 	}
 
 	if report.WorkerID != nil {
-		return "", errors.New("report already assigned to a worker")
+		return "", http_error.REPORT_ALREADY_ASSIGNED
 	}
 
 	worker, err := s.userRepo.FindUserByID(req.WorkerID)
 	if err != nil || worker == nil {
-		return "", errors.New("worker not found")
+		return "", http_error.WORKER_NOT_FOUND
 	}
 
-	if worker.Role != "worker" {
-		return "", errors.New("only workers can be assigned")
+	if worker.Role != entity.ROLE_WORKER {
+		return "", http_error.ONLY_WORKER_CAN_ASSIGN
 	}
 
 	if err := s.reportRepo.AssignWorker(req.ReportID, req.WorkerID, req.AdminNotes, req.Deadline); err != nil {
@@ -182,11 +185,11 @@ func (s *reportService) FinishReport(workerID uuid.UUID, file multipart.File, he
 
 	report, err := s.reportRepo.GetReportByID(reportID)
 	if err != nil {
-		return errors.New("report not found")
+		return http_error.REPORT_NOT_FOUND
 	}
 
 	if report.WorkerID == nil || *report.WorkerID != workerID {
-		return errors.New("you are not assigned to this report")
+		return http_error.NOT_ASSIGNED_TO_REPORT
 	}
 
 	afterImageID := fmt.Sprintf("%s_after_%s", reportID, time.Now().Format("20060102150405"))
@@ -195,5 +198,88 @@ func (s *reportService) FinishReport(workerID uuid.UUID, file multipart.File, he
 		return http_error.CLOUDINARY_UPLOAD_FAILED
 	}
 
-	return s.reportRepo.UpdateAfterImage(reportID, afterImageURL, "Finish by Worker")
+	return s.reportRepo.UpdateAfterImage(reportID, afterImageURL, entity.STATUS_FINISH_BY_WORKER)
+}
+
+func (s *reportService) GetUserReports(userID uuid.UUID, page, limit int) (*dto.PaginatedReportsResponse, error) {
+	offset := (page - 1) * limit
+	reports, total, err := s.reportRepo.GetReportsByUserID(userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildPaginatedResponse(reports, total, page, limit), nil
+}
+
+func (s *reportService) GetWorkerAssignedReports(workerID uuid.UUID, page, limit int) (*dto.PaginatedReportsResponse, error) {
+	offset := (page - 1) * limit
+	reports, total, err := s.reportRepo.GetAssignedReportsByWorkerID(workerID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildPaginatedResponse(reports, total, page, limit), nil
+}
+
+func (s *reportService) GetWorkerHistory(workerID uuid.UUID, verifyAdmin bool, page, limit int) (*dto.PaginatedReportsResponse, error) {
+	offset := (page - 1) * limit
+	status := entity.STATUS_FINISH_BY_WORKER
+	if verifyAdmin {
+		status = entity.STATUS_FINISHED
+	}
+
+	reports, total, err := s.reportRepo.GetWorkerHistory(workerID, status, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildPaginatedResponse(reports, total, page, limit), nil
+}
+
+func (s *reportService) VerifyReport(reportID string) error {
+	report, err := s.reportRepo.GetReportByID(reportID)
+	if err != nil {
+		return http_error.REPORT_NOT_FOUND
+	}
+
+	if report.Status != entity.STATUS_FINISH_BY_WORKER {
+		return http_error.ONLY_FINISH_BY_WORKER_VERIFY
+	}
+
+	return s.reportRepo.UpdateStatus(reportID, entity.STATUS_FINISHED)
+}
+
+func (s *reportService) buildPaginatedResponse(reports []entity.Report, total int64, page, limit int) *dto.PaginatedReportsResponse {
+	var reportDTOs []dto.UserReportResponse
+	for _, report := range reports {
+		reportDTOs = append(reportDTOs, dto.UserReportResponse{
+			ID:             report.ID,
+			Longitude:      report.Longitude,
+			Latitude:       report.Latitude,
+			RoadName:       report.RoadName,
+			BeforeImageURL: report.BeforeImageURL,
+			AfterImageURL:  report.AfterImageURL,
+			Description:    report.Description,
+			DestructClass:  report.DestructClass,
+			LocationScore:  report.LocationScore,
+			TotalScore:     report.TotalScore,
+			Status:         report.Status,
+			AdminNotes:     report.AdminNotes,
+			Deadline:       report.Deadline,
+			CreatedAt:      report.CreatedAt,
+		})
+	}
+
+	totalPages := int(total) / limit
+	if int(total)%limit != 0 {
+		totalPages++
+	}
+
+	return &dto.PaginatedReportsResponse{
+		Reports:    reportDTOs,
+		TotalCount: total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	}
 }

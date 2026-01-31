@@ -16,6 +16,10 @@ type ReportRepository interface {
 	AssignWorker(reportID string, workerID uuid.UUID, adminNotes string, deadline *time.Time) error
 	GetAssignedReports() ([]entity.Report, error)
 	UpdateAfterImage(reportID string, afterImageURL string, status string) error
+	GetReportsByUserID(userID uuid.UUID, limit, offset int) ([]entity.Report, int64, error)
+	GetAssignedReportsByWorkerID(workerID uuid.UUID, limit, offset int) ([]entity.Report, int64, error)
+	GetWorkerHistory(workerID uuid.UUID, status string, limit, offset int) ([]entity.Report, int64, error)
+	UpdateStatus(reportID string, status string) error
 }
 
 type reportRepository struct {
@@ -32,7 +36,7 @@ func (r *reportRepository) CreateReport(report *entity.Report) error {
 
 func (r *reportRepository) GetCompletedNonGoodReports() ([]entity.Report, error) {
 	var reports []entity.Report
-	err := r.db.Where("status = ? AND destruct_class != ?", "completed", "good").Find(&reports).Error
+	err := r.db.Where("status = ? AND destruct_class != ?", entity.STATUS_COMPLETED, entity.DESTRUCT_CLASS_GOOD).Find(&reports).Error
 	return reports, err
 }
 
@@ -48,7 +52,7 @@ func (r *reportRepository) GetReportByID(id string) (*entity.Report, error) {
 func (r *reportRepository) AssignWorker(reportID string, workerID uuid.UUID, adminNotes string, deadline *time.Time) error {
 	return r.db.Model(&entity.Report{}).Where("id = ?", reportID).Updates(map[string]interface{}{
 		"worker_id":   workerID,
-		"status":      "assigned",
+		"status":      entity.STATUS_ASSIGNED,
 		"admin_notes": adminNotes,
 		"deadline":    deadline,
 	}).Error
@@ -65,4 +69,32 @@ func (r *reportRepository) UpdateAfterImage(reportID string, afterImageURL strin
 		"after_image_url": afterImageURL,
 		"status":          status,
 	}).Error
+}
+
+func (r *reportRepository) GetReportsByUserID(userID uuid.UUID, limit, offset int) ([]entity.Report, int64, error) {
+	var reports []entity.Report
+	var total int64
+	r.db.Model(&entity.Report{}).Where("user_id = ?", userID).Count(&total)
+	err := r.db.Where("user_id = ?", userID).Order("created_at DESC").Limit(limit).Offset(offset).Find(&reports).Error
+	return reports, total, err
+}
+
+func (r *reportRepository) GetAssignedReportsByWorkerID(workerID uuid.UUID, limit, offset int) ([]entity.Report, int64, error) {
+	var reports []entity.Report
+	var total int64
+	r.db.Model(&entity.Report{}).Where("worker_id = ? AND status = ?", workerID, entity.STATUS_ASSIGNED).Count(&total)
+	err := r.db.Where("worker_id = ? AND status = ?", workerID, entity.STATUS_ASSIGNED).Order("created_at DESC").Limit(limit).Offset(offset).Find(&reports).Error
+	return reports, total, err
+}
+
+func (r *reportRepository) GetWorkerHistory(workerID uuid.UUID, status string, limit, offset int) ([]entity.Report, int64, error) {
+	var reports []entity.Report
+	var total int64
+	r.db.Model(&entity.Report{}).Where("worker_id = ? AND status = ?", workerID, status).Count(&total)
+	err := r.db.Where("worker_id = ? AND status = ?", workerID, status).Order("created_at DESC").Limit(limit).Offset(offset).Find(&reports).Error
+	return reports, total, err
+}
+
+func (r *reportRepository) UpdateStatus(reportID string, status string) error {
+	return r.db.Model(&entity.Report{}).Where("id = ?", reportID).Update("status", status).Error
 }
