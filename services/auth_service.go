@@ -75,7 +75,8 @@ func (s *authService) RegisterUser(req dto.RegisterRequest) error {
 	s.otpStore[req.Email] = otp
 	s.mutex.Unlock()
 
-	utils.SendOTP(req.Email, otp)
+	// Send OTP asynchronously to prevent blocking
+	go utils.SendOTP(req.Email, otp)
 
 	return nil
 }
