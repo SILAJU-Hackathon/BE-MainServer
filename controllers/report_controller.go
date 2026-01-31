@@ -23,6 +23,8 @@ type ReportController interface {
 	GetWorkerAssignedReports(ctx *gin.Context)
 	GetWorkerHistory(ctx *gin.Context)
 	VerifyReport(ctx *gin.Context)
+	GetReportDetail(ctx *gin.Context)
+	GetReportImage(ctx *gin.Context)
 }
 
 type reportController struct {
@@ -320,4 +322,70 @@ func (c *reportController) VerifyReport(ctx *gin.Context) {
 	}
 
 	utils.SendSuccessResponse(ctx, "Report verified successfully", nil)
+}
+
+// @Summary Get Report Detail
+// @Description Get assigned report detail for worker
+// @Tags Worker
+// @Produce json
+// @Param report_id query string true "Report ID"
+// @Security BearerAuth
+// @Success 200 {object} dto.ReportDetailResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /api/worker/report/assign/detail [get]
+func (c *reportController) GetReportDetail(ctx *gin.Context) {
+	workerIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		utils.SendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	workerID := workerIDVal.(uuid.UUID)
+
+	reportID := ctx.Query("report_id")
+	if reportID == "" {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, "report_id is required")
+		return
+	}
+
+	response, err := c.reportService.GetReportDetail(workerID, reportID)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Report detail retrieved", response)
+}
+
+// @Summary Get Report Image
+// @Description Get before image URL for assigned report
+// @Tags Worker
+// @Produce json
+// @Param report_id query string true "Report ID"
+// @Security BearerAuth
+// @Success 200 {object} dto.ReportImageResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /api/worker/report/assign/image [get]
+func (c *reportController) GetReportImage(ctx *gin.Context) {
+	workerIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		utils.SendErrorResponse(ctx, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	workerID := workerIDVal.(uuid.UUID)
+
+	reportID := ctx.Query("report_id")
+	if reportID == "" {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, "report_id is required")
+		return
+	}
+
+	response, err := c.reportService.GetReportImage(workerID, reportID)
+	if err != nil {
+		utils.SendErrorResponse(ctx, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SendSuccessResponse(ctx, "Report image retrieved", response)
 }

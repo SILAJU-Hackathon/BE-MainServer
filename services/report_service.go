@@ -34,6 +34,8 @@ type ReportService interface {
 	GetWorkerAssignedReports(workerID uuid.UUID, page, limit int) (*dto.PaginatedReportsResponse, error)
 	GetWorkerHistory(workerID uuid.UUID, verifyAdmin bool, page, limit int) (*dto.PaginatedReportsResponse, error)
 	VerifyReport(reportID string) error
+	GetReportDetail(workerID uuid.UUID, reportID string) (*dto.ReportDetailResponse, error)
+	GetReportImage(workerID uuid.UUID, reportID string) (*dto.ReportImageResponse, error)
 }
 
 type reportService struct {
@@ -282,4 +284,39 @@ func (s *reportService) buildPaginatedResponse(reports []entity.Report, total in
 		Limit:      limit,
 		TotalPages: totalPages,
 	}
+}
+
+func (s *reportService) GetReportDetail(workerID uuid.UUID, reportID string) (*dto.ReportDetailResponse, error) {
+	report, err := s.reportRepo.GetReportByID(reportID)
+	if err != nil {
+		return nil, http_error.REPORT_NOT_FOUND
+	}
+
+	if report.WorkerID == nil || *report.WorkerID != workerID {
+		return nil, http_error.NOT_ASSIGNED_TO_REPORT
+	}
+
+	return &dto.ReportDetailResponse{
+		BeforeImageURL: report.BeforeImageURL,
+		RoadName:       report.RoadName,
+		Deadline:       report.Deadline,
+		TotalScore:     report.TotalScore,
+		DestructClass:  report.DestructClass,
+		AdminNotes:     report.AdminNotes,
+	}, nil
+}
+
+func (s *reportService) GetReportImage(workerID uuid.UUID, reportID string) (*dto.ReportImageResponse, error) {
+	report, err := s.reportRepo.GetReportByID(reportID)
+	if err != nil {
+		return nil, http_error.REPORT_NOT_FOUND
+	}
+
+	if report.WorkerID == nil || *report.WorkerID != workerID {
+		return nil, http_error.NOT_ASSIGNED_TO_REPORT
+	}
+
+	return &dto.ReportImageResponse{
+		BeforeImageURL: report.BeforeImageURL,
+	}, nil
 }

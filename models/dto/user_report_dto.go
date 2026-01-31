@@ -30,3 +30,16 @@ type PaginatedReportsResponse struct {
 type VerifyReportRequest struct {
 	ReportID string `json:"report_id" binding:"required"`
 }
+
+type ReportDetailResponse struct {
+	BeforeImageURL string     `json:"before_image_url"`
+	RoadName       string     `json:"road_name"`
+	Deadline       *time.Time `json:"deadline"`
+	TotalScore     float64    `json:"total_score"`
+	DestructClass  string     `json:"destruct_class"`
+	AdminNotes     string     `json:"admin_notes"`
+}
+
+type ReportImageResponse struct {
+	BeforeImageURL string `json:"before_image_url"`
+}

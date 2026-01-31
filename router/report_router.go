@@ -40,5 +40,7 @@ func (r *reportRouter) Setup(router *gin.RouterGroup) {
 	workerGroup.Use(middleware.RoleMiddleware(entity.ROLE_WORKER, entity.ROLE_ADMIN))
 	workerGroup.PATCH("/report", r.reportController.FinishReport)
 	workerGroup.GET("/report/assign/me", r.reportController.GetWorkerAssignedReports)
+	workerGroup.GET("/report/assign/detail", r.reportController.GetReportDetail)
+	workerGroup.GET("/report/assign/image", r.reportController.GetReportImage)
 	workerGroup.GET("/report/history/me", r.reportController.GetWorkerHistory)
 }
