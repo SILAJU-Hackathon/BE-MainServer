@@ -119,6 +119,21 @@ definitions:
       isNewUser:
         type: boolean
     type: object
+  dto.LeaderboardEntry:
+    properties:
+      fullname:
+        type: string
+      level:
+        type: integer
+      rank:
+        type: integer
+      rank_name:
+        type: string
+      total_xp:
+        type: integer
+      user_id:
+        type: string
+    type: object
   dto.LoginRequest:
     properties:
       email:
@@ -801,6 +816,34 @@ paths:
       summary: Get Unlocked Achievements
       tags:
       - Achievements
+  /api/user/leaderboard:
+    get:
+      description: Get top users by XP (default limit 10)
+      parameters:
+      - description: Limit (default 10)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.LeaderboardEntry'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Leaderboard
+      tags:
+      - User
   /api/user/rank:
     get:
       description: Get the logged-in user's rank, level, XP progress

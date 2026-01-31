@@ -765,6 +765,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/user/leaderboard": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get top users by XP (default limit 10)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get Leaderboard",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 10)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.LeaderboardEntry"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/user/rank": {
             "get": {
                 "security": [
@@ -1354,6 +1399,29 @@ const docTemplate = `{
                 },
                 "isNewUser": {
                     "type": "boolean"
+                }
+            }
+        },
+        "dto.LeaderboardEntry": {
+            "type": "object",
+            "properties": {
+                "fullname": {
+                    "type": "string"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "rank": {
+                    "type": "integer"
+                },
+                "rank_name": {
+                    "type": "string"
+                },
+                "total_xp": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },

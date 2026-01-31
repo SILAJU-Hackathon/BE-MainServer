@@ -4,6 +4,7 @@ import (
 	_ "dinacom-11.0-backend/docs"
 	"dinacom-11.0-backend/provider"
 
+	brotli "github.com/anargu/gin-brotli"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	swaggerFiles "github.com/swaggo/files"
@@ -21,6 +22,7 @@ func RunRouter(appProvider provider.AppProvider) {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
+	router.Use(brotli.Brotli(brotli.DefaultCompression))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	authRouter := NewAuthRouter(controller.ProvideAuthController())
