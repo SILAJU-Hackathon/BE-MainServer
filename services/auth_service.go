@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"sync"
 
 	"dinacom-11.0-backend/models/dto"
 	entity "dinacom-11.0-backend/models/entity"
@@ -14,7 +13,6 @@ import (
 
 type AuthService interface {
 	RegisterUser(req dto.RegisterRequest) error
-	VerifyOTP(req dto.VerifyOTPRequest) (string, error)
 	LoginUser(req dto.LoginRequest) (string, error)
 	LoginAdmin(req dto.LoginRequest) (string, error)
 	LoginWorker(req dto.LoginRequest) (string, error)
@@ -31,14 +29,11 @@ type AuthService interface {
 
 type authService struct {
 	userRepo repositories.UserRepository
-	otpStore map[string]string
-	mutex    sync.RWMutex
 }
 
 func NewAuthService(userRepo repositories.UserRepository) AuthService {
 	return &authService{
 		userRepo: userRepo,
-		otpStore: make(map[string]string),
 	}
 }
 
@@ -48,8 +43,8 @@ func (s *authService) RegisterUser(req dto.RegisterRequest) error {
 		return err
 	}
 
-	// If user exists and is verified, reject registration
-	if existingUser != nil && existingUser.Verified {
+	// If user already exists, reject registration
+	if existingUser != nil {
 		return errors.New("email already registered")
 	}
 
@@ -58,66 +53,26 @@ func (s *authService) RegisterUser(req dto.RegisterRequest) error {
 		return err
 	}
 
-	// If user exists but not verified, update their info
-	if existingUser != nil && !existingUser.Verified {
-		existingUser.Username = req.Username
-		existingUser.Fullname = req.FullName
-		existingUser.Password = hashedPassword
-
-		if err := s.userRepo.UpdateUser(existingUser); err != nil {
-			return err
-		}
-	} else {
-		// New user registration
-		user := &entity.User{
-			Username: req.Username,
-			Fullname: req.FullName,
-			Email:    req.Email,
-			Role:     "user",
-			Password: hashedPassword,
-			Verified: false,
-		}
-
-		if err := s.userRepo.CreateUser(user); err != nil {
-			return err
-		}
+	// Create new user (verified by default, no OTP needed)
+	user := &entity.User{
+		Username: req.Username,
+		Fullname: req.FullName,
+		Email:    req.Email,
+		Role:     "user",
+		Password: hashedPassword,
+		Verified: true,
 	}
 
-	otp := utils.GenerateOTP()
-
-	s.mutex.Lock()
-	s.otpStore[req.Email] = otp
-	s.mutex.Unlock()
-
-	// Send OTP asynchronously to prevent blocking
-	go utils.SendOTP(req.Email, otp)
+	if err := s.userRepo.CreateUser(user); err != nil {
+		return err
+	}
 
 	return nil
 }
 
+// VerifyOTP is deprecated - users are now verified on registration
 func (s *authService) VerifyOTP(req dto.VerifyOTPRequest) (string, error) {
-	s.mutex.RLock()
-	storedOTP, exists := s.otpStore[req.Email]
-	s.mutex.RUnlock()
-
-	if !exists || storedOTP != req.OTP {
-		return "", errors.New("invalid or expired OTP")
-	}
-
-	if err := s.userRepo.UpdateUserVerified(req.Email, true); err != nil {
-		return "", err
-	}
-
-	user, err := s.userRepo.FindUserByEmail(req.Email)
-	if err != nil {
-		return "", err
-	}
-
-	s.mutex.Lock()
-	delete(s.otpStore, req.Email)
-	s.mutex.Unlock()
-
-	return utils.GenerateAccessToken(user.ID, user.Role, user.Email)
+	return "", errors.New("OTP verification is no longer required")
 }
 
 func (s *authService) LoginUser(req dto.LoginRequest) (string, error) {
