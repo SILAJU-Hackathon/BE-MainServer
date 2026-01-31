@@ -13,6 +13,7 @@ import (
 
 type AuthService interface {
 	RegisterUser(req dto.RegisterRequest) error
+	VerifyOTP(req dto.VerifyOTPRequest) (string, error) // Deprecated but kept for compatibility
 	LoginUser(req dto.LoginRequest) (string, error)
 	LoginAdmin(req dto.LoginRequest) (string, error)
 	LoginWorker(req dto.LoginRequest) (string, error)
