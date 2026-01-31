@@ -87,7 +87,7 @@ Backend API untuk aplikasi pelaporan kondisi jalan dengan sistem manajemen worke
 │                        REPORT LIFECYCLE                         │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  1. USER creates report          →  Status: "pending"          │
+│  1. USER creates report          →  Status: "complete"           │
 │                                                                 │
 │  2. ADMIN assigns worker         →  Status: "assigned"         │
 │     (+ admin_notes, deadline)                                   │
