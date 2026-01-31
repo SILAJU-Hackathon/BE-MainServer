@@ -1,3 +1,13 @@
+---
+title: DINACOM 11.0 Backend
+emoji: 🤖
+colorFrom: green
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
+
 # SILAJU Backend - Feature Review
 
 Backend API untuk aplikasi pelaporan kondisi jalan dengan sistem manajemen worker dan admin.
@@ -206,11 +216,3 @@ Swagger UI tersedia di: `http://localhost:8080/swagger/index.html`
 - Google OAuth Integration
 - Gzip Compression
 
----
-title: DINACOM 11.0 Backend
-emoji: 🤖
-colorFrom: green
-colorTo: blue
-sdk: docker
-pinned: false
----

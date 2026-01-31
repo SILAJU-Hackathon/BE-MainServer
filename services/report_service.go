@@ -225,7 +225,7 @@ func (s *reportService) GetWorkerHistory(workerID uuid.UUID, verifyAdmin bool, p
 	offset := (page - 1) * limit
 	status := entity.STATUS_FINISH_BY_WORKER
 	if verifyAdmin {
-		status = entity.STATUS_FINISHED
+		status = entity.STATUS_VERIFIED
 	}
 
 	reports, total, err := s.reportRepo.GetWorkerHistory(workerID, status, limit, offset)
@@ -246,7 +246,7 @@ func (s *reportService) VerifyReport(reportID string) error {
 		return http_error.ONLY_FINISH_BY_WORKER_VERIFY
 	}
 
-	return s.reportRepo.UpdateStatus(reportID, entity.STATUS_FINISHED)
+	return s.reportRepo.UpdateStatus(reportID, entity.STATUS_VERIFIED)
 }
 
 func (s *reportService) buildPaginatedResponse(reports []entity.Report, total int64, page, limit int) *dto.PaginatedReportsResponse {

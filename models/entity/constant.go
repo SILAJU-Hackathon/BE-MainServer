@@ -5,7 +5,7 @@ const (
 	STATUS_PENDING          = "pending"
 	STATUS_ASSIGNED         = "assigned"
 	STATUS_FINISH_BY_WORKER = "finish by worker"
-	STATUS_FINISHED         = "finished"
+	STATUS_VERIFIED         = "verified"
 	STATUS_COMPLETED        = "complete"
 
 	// Roles
