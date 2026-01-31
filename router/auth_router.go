@@ -55,4 +55,14 @@ func (r *authRouter) Setup(router *gin.RouterGroup) {
 	userProtected.Use(middleware.AuthMiddleware())
 	userProtected.Use(middleware.RoleMiddleware("user", "admin"))
 	userProtected.GET("/me", r.authController.GetProfile)
+
+	// Worker CRUD routes (Admin only)
+	workerCRUD := router.Group("/admin/worker")
+	workerCRUD.Use(middleware.AuthMiddleware())
+	workerCRUD.Use(middleware.RoleMiddleware("admin"))
+	workerCRUD.POST("", r.authController.CreateWorker)
+	workerCRUD.GET("", r.authController.GetAllWorkers)
+	workerCRUD.GET("/:id", r.authController.GetWorkerByID)
+	workerCRUD.PUT("/:id", r.authController.UpdateWorker)
+	workerCRUD.DELETE("/:id", r.authController.DeleteWorker)
 }

@@ -6,7 +6,6 @@ import (
 
 	brotli "github.com/anargu/gin-brotli"
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/gzip"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -23,7 +22,6 @@ func RunRouter(appProvider provider.AppProvider) {
 		AllowCredentials: true,
 	}))
 	router.Use(brotli.Brotli(brotli.DefaultCompression))
-	router.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	authRouter := NewAuthRouter(controller.ProvideAuthController())
 	authRouter.Setup(router.Group("/api"))

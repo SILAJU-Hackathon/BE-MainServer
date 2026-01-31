@@ -35,3 +35,26 @@ type UserResponse struct {
 type AssignWorkerRoleRequest struct {
 	WorkerID uuid.UUID `json:"worker_id" binding:"required"`
 }
+
+type CreateWorkerRequest struct {
+	Fullname string `json:"fullname" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
+type UpdateWorkerRequest struct {
+	Fullname string `json:"fullname"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type WorkerResponse struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	Fullname  string    `json:"fullname"`
+	Email     string    `json:"email"`
+	Verified  bool      `json:"verified"`
+	CreatedAt string    `json:"created_at"`
+}
