@@ -86,3 +86,13 @@ func SendResponse[Tdata any, TMetaData any](c *gin.Context, metaData TMetaData, 
 	}
 
 }
+func SendSuccessResponse(c *gin.Context, message string, data interface{}) {
+	ResponseOK[interface{}, interface{}](c, nil, data)
+}
+
+func SendErrorResponse(c *gin.Context, code int, message string) {
+	c.JSON(code, dto.ErrorResponse{
+		Status:  "error",
+		Message: message,
+	})
+}

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"dinacom-11.0-backend/models/entity"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,7 +29,7 @@ func NewAppProvider() AppProvider {
 	servicesProvider := NewServicesProvider(repositoriesProvider, configProvider)
 	controllerProvider := NewControllerProvider(servicesProvider)
 	middlewareProvider := NewMiddlewareProvider(servicesProvider)
-	// configProvider.ProvideDatabaseConfig().AutoMigrateAll()
+	configProvider.ProvideDatabaseConfig().AutoMigrateAll(&entity.User{})
 
 	return &appProvider{
 		ginRouter:            ginRouter,
